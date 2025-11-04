@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Auth Simples</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="/styles.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <h1>Cadastro</h1>
+    <form id="registerForm">
+      <input name="username" placeholder="Usuário" required />
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Senha" required />
+      <button type="submit">Cadastrar</button>
+    </form>
+
+    <h1>Login</h1>
+    <form id="loginForm">
+      <input type="email" name="email" placeholder="Email" required />
+      <input type="password" name="password" placeholder="Senha" required />
+      <button type="submit">Entrar</button>
+    </form>
+
+    <pre id="output"></pre>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
