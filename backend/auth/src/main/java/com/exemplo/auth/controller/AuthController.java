@@ -3,6 +3,7 @@ package com.exemplo.auth.controller;
 import com.exemplo.auth.dto.LoginRequest;
 import com.exemplo.auth.dto.RegisterRequest;
 import com.exemplo.auth.model.User;
+import com.exemplo.auth.repository.UserRepository;
 import com.exemplo.auth.service.AuthService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -16,9 +17,11 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService service;
+    private final UserRepository users;
 
-    public AuthController(AuthService service) {
+    public AuthController(AuthService service, UserRepository users) {
         this.service = service;
+        this.users = users;
     }
 
     @PostMapping("/register")
@@ -56,13 +59,16 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<?> me(HttpSession session) {
-        Object auth = session.getAttribute("auth");
-        if (auth == null || !(Boolean) auth) {
+        Boolean auth = (Boolean) session.getAttribute("auth");
+        if (auth == null || !auth) {
             return ResponseEntity.status(401).body(Map.of("error", "unauthorized"));
         }
+        String email = (String) session.getAttribute("email");
+        User u = users.findByEmail(email).orElseThrow();
         return ResponseEntity.ok(Map.of(
-                "email", session.getAttribute("email")
-                // "uid", session.getAttribute("uid") // quando passar a guardar
+                "id", u.getId(),
+                "email", u.getEmail(),
+                "username", u.getUsername()
         ));
     }
 }

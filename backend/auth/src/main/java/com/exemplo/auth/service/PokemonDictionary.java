@@ -4,6 +4,8 @@ package com.exemplo.auth.service;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import com.exemplo.auth.model.CollectionFolder;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -43,5 +45,10 @@ public class PokemonDictionary {
     private String capitalize(String s) {
         if (s.isEmpty()) return s;
         return s.substring(0,1).toUpperCase()+s.substring(1);
+    }
+
+    public Optional<CollectionFolder> pickBestCandidate(String raw) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'pickBestCandidate'");
     }
 }

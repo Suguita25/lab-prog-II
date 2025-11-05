@@ -2,6 +2,7 @@ package com.exemplo.auth.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "collection_folders",
@@ -10,14 +11,14 @@ public class CollectionFolder {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable=false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
     @Column(nullable=false, length=60)
     private String name;
 
-    @Column(nullable=false)
-    private Instant createdAt = Instant.now();
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     // getters/setters
     public Long getId() { return id; }

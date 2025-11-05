@@ -39,10 +39,54 @@ async function loadFolders() {
   const arr = await getJson('/api/collections/folders');
   if (!arr) return;
   const ul = document.getElementById('foldersList');
-  if (ul) ul.innerHTML = arr.length
-    ? arr.map(f => `<li><strong>#${f.id}</strong> — ${f.name}</li>`).join('')
+  if (!ul) return;
+
+  ul.innerHTML = arr.length
+    ? arr.map(f => `
+      <li>
+        <strong>#${f.id}</strong> — ${f.name}
+        <button data-open="${f.id}" style="margin-left:8px;">Ver</button>
+      </li>`).join('')
     : '<li class="muted">Nenhuma pasta</li>';
+
+  // delega cliques para abrir pasta
+  ul.querySelectorAll('button[data-open]').forEach(btn => {
+    btn.addEventListener('click', () => openFolder(Number(btn.dataset.open)));
+  });
+
   setOut(arr);
+}
+
+
+async function openFolder(folderId) {
+  const r = await getJson(`/api/collections/folders/${folderId}`);
+  if (!r) return;
+
+  // header
+  const head = document.getElementById('folderHeader');
+  if (head) head.textContent = `Pasta #${r.id} — ${r.name}`;
+
+  // tabela
+  const tbody = document.getElementById('cardsBody');
+  if (!tbody) return;
+
+  if (!r.items || r.items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:10px; color:#666;">Sem cartas nesta pasta.</td></tr>`;
+  } else {
+    tbody.innerHTML = r.items.map((it, idx) => `
+      <tr>
+        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${idx + 1}</td>
+        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.cardName ?? ''}</td>
+        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.pokemonName ?? ''}</td>
+        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.source ?? ''}</td>
+        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">
+          ${it.imagePath ? `<a href="${it.imagePath}" target="_blank">ver imagem</a>` : '—'}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  setOut(r); // mostra JSON no painel de saída
 }
 
 async function createFolder() {

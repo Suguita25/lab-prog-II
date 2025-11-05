@@ -6,4 +6,8 @@ import java.util.List;
 
 public interface CardItemRepository extends JpaRepository<CardItem, Long> {
     List<CardItem> findByFolderIdAndUserId(Long folderId, Long userId);
+    long countByFolderIdAndUserId(Long folderId, Long userId);
+    void deleteByFolderIdAndUserId(Long folderId, Long userId);
+    void deleteByIdAndUserId(Long id, Long userId);
+    boolean existsByIdAndUserId(Long id, Long userId);
 }

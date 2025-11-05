@@ -2,6 +2,7 @@ package com.exemplo.auth.model;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name="card_items")
@@ -28,7 +29,7 @@ public class CardItem {
     private String imagePath;
 
     @Column(nullable=false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 
     // getters/setters
     public Long getId() { return id; }
@@ -47,5 +48,5 @@ public class CardItem {
     public void setPokemonName(String pokemonName) { this.pokemonName = pokemonName; }
     public void setSource(String source) { this.source = source; }
     public void setImagePath(String imagePath) { this.imagePath = imagePath; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

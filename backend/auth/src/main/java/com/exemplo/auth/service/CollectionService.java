@@ -107,6 +107,30 @@ public class CollectionService {
         item.setCreatedAt(Instant.now()); // <<<< Instant
         return itemRepo.save(item);
     }
+    
+
+    public CardItem addWithOptionalImage(Long userId, Long folderId, String cardName, File tempImage, Path storageBase) throws Exception {
+    var f = folderRepo.findByIdAndUserId(folderId, userId)
+            .orElseThrow(() -> new IllegalArgumentException("folder not found"));
+
+    // move imagem para o storage
+    Files.createDirectories(storageBase);
+    Path target = storageBase.resolve(tempImage.getName());
+    Files.move(tempImage.toPath(), target);
+
+    CardItem item = new CardItem();
+    item.setFolderId(f.getId());
+    item.setUserId(userId);
+    item.setCardName(cardName);
+    // normaliza o pokemon via dicionário a partir do nome informado
+    item.setPokemonName(dict.bestMatch(cardName).orElse(cardName));
+    item.setSource("manual+image");
+    item.setImagePath(target.toString());
+    item.setCreatedAt(Instant.now());
+    return itemRepo.save(item);
+    }
+
+
 
     @Transactional
     public void deleteCard(Long userId, Long cardId) {
