@@ -2,6 +2,7 @@
 const out = document.getElementById('output');
 const meEmail = document.getElementById('meEmail');
 const bar = document.getElementById('bar');
+let currentFolderId = null; // controla a pasta aberta
 
 function setOut(obj) {
   out && (out.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2));
@@ -49,7 +50,6 @@ async function loadFolders() {
       </li>`).join('')
     : '<li class="muted">Nenhuma pasta</li>';
 
-  // delega cliques para abrir pasta
   ul.querySelectorAll('button[data-open]').forEach(btn => {
     btn.addEventListener('click', () => openFolder(Number(btn.dataset.open)));
   });
@@ -57,33 +57,41 @@ async function loadFolders() {
   setOut(arr);
 }
 
-
+// ---- visualizar pasta (apenas 2 colunas: Pokémon | Imagem) ----
 async function openFolder(folderId) {
   const r = await getJson(`/api/collections/folders/${folderId}`);
   if (!r) return;
 
+  currentFolderId = folderId;
+
   // header
   const head = document.getElementById('folderHeader');
   if (head) head.textContent = `Pasta #${r.id} — ${r.name}`;
+
+  // preencher IDs dos formulários (se existirem na página)
+  const fidManual = document.getElementById('folderIdManual');
+  const fidScan   = document.getElementById('folderIdScan');
+  if (fidManual) fidManual.value = folderId;
+  if (fidScan)   fidScan.value   = folderId;
 
   // tabela
   const tbody = document.getElementById('cardsBody');
   if (!tbody) return;
 
   if (!r.items || r.items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:10px; color:#666;">Sem cartas nesta pasta.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="2" style="padding:10px; color:#666;">Sem cartas nesta pasta.</td></tr>`;
   } else {
-    tbody.innerHTML = r.items.map((it, idx) => `
-      <tr>
-        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${idx + 1}</td>
-        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.cardName ?? ''}</td>
-        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.pokemonName ?? ''}</td>
-        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.source ?? ''}</td>
-        <td style="padding:8px; border-bottom:1px solid #f0f0f0;">
-          ${it.imagePath ? `<a href="${it.imagePath}" target="_blank">ver imagem</a>` : '—'}
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = r.items.map(it => {
+      const link = it.imagePath
+        ? `<a href="${it.imagePath}" target="_blank">ver</a>`
+        : '—';
+      return `
+        <tr>
+          <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.pokemonName ?? ''}</td>
+          <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${link}</td>
+        </tr>
+      `;
+    }).join('');
   }
 
   setOut(r); // mostra JSON no painel de saída
@@ -99,16 +107,17 @@ async function createFolder() {
 
 // ---- cartas ----
 async function addManual() {
-  const folderId = Number(document.getElementById('folderIdManual').value);
-  const cardName = document.getElementById('cardName').value.trim();
+  const folderId = Number(document.getElementById('folderIdManual')?.value);
+  const cardName = document.getElementById('cardName')?.value.trim();
   if (!folderId || !cardName) return setOut({ error: 'Preencha Folder ID e Nome da carta' });
   const r = await postJson('/api/collections/cards/manual', { folderId, cardName });
   if (r) setOut(r.json ?? r);
+  if (currentFolderId) openFolder(currentFolderId); // atualiza a lista da pasta aberta
 }
 
 async function scanUpload() {
-  const folderId = Number(document.getElementById('folderIdScan').value);
-  const file = document.getElementById('fileScan').files[0];
+  const folderId = Number(document.getElementById('folderIdScan')?.value);
+  const file = document.getElementById('fileScan')?.files[0];
   if (!folderId || !file) return setOut({ error: 'Preencha Folder ID e selecione uma imagem' });
 
   return new Promise((resolve, reject) => {
@@ -132,6 +141,7 @@ async function scanUpload() {
       try {
         const json = JSON.parse(xhr.responseText || '{}');
         setOut(json);
+        if (currentFolderId) openFolder(currentFolderId); // atualiza a lista
         resolve(json);
       } catch {
         setOut({ raw: xhr.responseText });
