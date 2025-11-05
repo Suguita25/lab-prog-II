@@ -1,7 +1,41 @@
-body { font-family: system-ui, Arial, sans-serif; background:#f6f7f9; }
-.container { max-width: 520px; margin: 32px auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.08); }
-h1 { font-size: 20px; margin-top: 16px; }
-form { display:flex; flex-direction:column; gap:10px; margin-bottom: 20px; }
-input, button { padding:10px; font-size:16px; }
-button { cursor:pointer; }
-pre { background:#111; color:#eee; padding:12px; border-radius:8px; white-space:pre-wrap; }
+/* Container menor */
+.container {
+  max-width: 560px;   /* antes devia estar muito largo */
+  margin: 32px auto;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+/* Blocos de campo mais baixos */
+form { gap: 10px; }
+
+/* Inputs compactos */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea {
+  width: 100%;
+  padding: 10px 12px;    /* ↓ padding */
+  font-size: 14px;       /* ↓ fonte */
+  line-height: 1.2;
+  border: 1px solid #ddd;
+  border-radius: 8px;    /* ↓ raio */
+}
+
+/* Espaço entre campos menor */
+.form-group { margin-bottom: 10px; }
+
+/* Botões menores */
+button {
+  padding: 10px 14px;    /* ↓ padding */
+  font-size: 14px;       /* ↓ fonte */
+  border-radius: 8px;
+}
+
+/* Títulos com menos margem */
+h1 { font-size: 20px; margin: 8px 0 12px; }
+h2 { font-size: 18px; margin: 16px 0 10px; }
+
+/* Deixa os cards (se tiver) mais finos */
+.card { padding: 16px; border-radius: 12px; }

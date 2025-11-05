@@ -5,10 +5,16 @@ spring:
     password: postgres
   jpa:
     hibernate:
-      ddl-auto: update   # para começar rápido; em produção use migrações
-    properties:
-      hibernate:
-        format_sql: true
+      ddl-auto: update
     show-sql: true
+    properties:
+      hibernate.format_sql: true
+
 server:
   port: 8080
+
+app:
+  ocr:
+    tesseractPath: "C:/Program Files/Tesseract-OCR/tesseract.exe"
+    datapath: "C:/Program Files/Tesseract-OCR/tessdata"
+    lang: "eng"
