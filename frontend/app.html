@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minha Coleção • Pokémon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="app_styles.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="card-shell">
+    <div class="header">
+      <div>
+        <h1>Minha Coleção</h1>
+        <div class="muted">
+          Bem-vindo, <span id="meEmail" class="pill">...</span>
+        </div>
+      </div>
+      <div class="row">
+        <button id="logoutBtn">Sair</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section>
+        <h2>Minhas Pastas</h2>
+        <div class="row">
+          <input id="folderName" type="text" placeholder="Nome da pasta" />
+          <button class="primary" id="btnCreateFolder">Criar pasta</button>
+          <button id="btnReloadFolders">Atualizar</button>
+        </div>
+        <ul id="foldersList"></ul>
+      </section>
+
+      <section>
+        <h2>Adicionar carta manualmente</h2>
+        <div class="row">
+          <input id="folderIdManual" type="number" placeholder="Folder ID" />
+          <input id="cardName" type="text" placeholder="Nome da carta/Pokémon" />
+          <button class="primary" id="btnAddManual">Adicionar</button>
+        </div>
+
+        <h2 style="margin-top:24px;">Scanner (upload de imagem)</h2>
+        <div class="row">
+          <input id="folderIdScan" type="number" placeholder="Folder ID" />
+          <input id="fileScan" type="file" accept="image/*" />
+          <button id="btnScan" class="primary">Enviar</button>
+        </div>
+        <div class="progress" aria-hidden="true">
+          <div id="bar" class="bar"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- GRID DE CARTAS -->
+    <div class="cards-header">
+      <div>
+        <h2>Conteúdo da pasta</h2>
+        <div id="folderHeader" class="muted">
+          Selecione uma pasta para visualizar.
+        </div>
+      </div>
+    </div>
+
+    <div id="cardsGrid" class="cards-grid">
+      <!-- cards são preenchidos via JS -->
+    </div>
+
+    <div class="footer-row">
+      <a href="/social.html" class="pill" style="text-decoration:none; background:#e0e7ff;">
+        Rede social
+      </a>
+      <span class="muted" style="font-size:12px;">Debug da API:</span>
+    </div>
+    <pre id="output">{}</pre>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

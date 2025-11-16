@@ -2,10 +2,12 @@
 const out = document.getElementById('output');
 const meEmail = document.getElementById('meEmail');
 const bar = document.getElementById('bar');
-let currentFolderId = null; // controla a pasta aberta
 
 function setOut(obj) {
-  out && (out.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2));
+  if (!out) return;
+  out.textContent = typeof obj === 'string'
+    ? obj
+    : JSON.stringify(obj, null, 2);
 }
 
 async function getJson(url) {
@@ -44,10 +46,11 @@ async function loadFolders() {
 
   ul.innerHTML = arr.length
     ? arr.map(f => `
-      <li>
-        <strong>#${f.id}</strong> — ${f.name}
-        <button data-open="${f.id}" style="margin-left:8px;">Ver</button>
-      </li>`).join('')
+        <li>
+          <strong>#${f.id}</strong> — ${f.name}
+          <button data-open="${f.id}" style="margin-left:8px;">Abrir</button>
+        </li>
+      `).join('')
     : '<li class="muted">Nenhuma pasta</li>';
 
   ul.querySelectorAll('button[data-open]').forEach(btn => {
@@ -57,46 +60,63 @@ async function loadFolders() {
   setOut(arr);
 }
 
-// ---- visualizar pasta (apenas 2 colunas: Pokémon | Imagem) ----
+// ---- abrir pasta + montar GRID de cartas ----
 async function openFolder(folderId) {
   const r = await getJson(`/api/collections/folders/${folderId}`);
   if (!r) return;
 
-  currentFolderId = folderId;
-
-  // header
   const head = document.getElementById('folderHeader');
   if (head) head.textContent = `Pasta #${r.id} — ${r.name}`;
 
-  // preencher IDs dos formulários (se existirem na página)
-  const fidManual = document.getElementById('folderIdManual');
-  const fidScan   = document.getElementById('folderIdScan');
-  if (fidManual) fidManual.value = folderId;
-  if (fidScan)   fidScan.value   = folderId;
+  // preencher IDs dos formulários
+  document.getElementById('folderIdManual').value = folderId;
+  document.getElementById('folderIdScan').value   = folderId;
 
-  // tabela
-  const tbody = document.getElementById('cardsBody');
-  if (!tbody) return;
+  const grid = document.getElementById('cardsGrid');
+  if (!grid) return;
 
   if (!r.items || r.items.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="2" style="padding:10px; color:#666;">Sem cartas nesta pasta.</td></tr>`;
+    grid.innerHTML = '<div class="muted" style="padding:10px;">Sem cartas nesta pasta.</div>';
   } else {
-    tbody.innerHTML = r.items.map(it => {
-      const link = it.imagePath
-        ? `<a href="${it.imagePath}" target="_blank">ver</a>`
-        : '—';
+    grid.innerHTML = r.items.map(it => {
+      const pokemonName = it.pokemonName || 'Unknown';
+      const baseName = (it.cardName && it.cardName !== it.pokemonName) ? it.cardName : '';
+      const hasImage = !!it.imagePath;
+
       return `
-        <tr>
-          <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${it.pokemonName ?? ''}</td>
-          <td style="padding:8px; border-bottom:1px solid #f0f0f0;">${link}</td>
-        </tr>
+        <article class="card-item">
+          <div class="card-thumb">
+            ${
+              hasImage
+                ? `<img src="${it.imagePath}" alt="${pokemonName}">`
+                : `<div class="card-no-img">Sem imagem</div>`
+            }
+          </div>
+          <div class="card-body">
+            <h3 class="card-title">${pokemonName}</h3>
+            ${
+              baseName
+                ? `<div class="card-sub">${baseName}</div>`
+                : ''
+            }
+            <div class="card-meta">
+              ${it.source ? `<span class="pill sm">${it.source}</span>` : ''}
+              ${
+                hasImage
+                  ? `<a class="link" href="${it.imagePath}" target="_blank">abrir imagem</a>`
+                  : ''
+              }
+            </div>
+          </div>
+        </article>
       `;
     }).join('');
   }
 
-  setOut(r); // mostra JSON no painel de saída
+  setOut(r);
 }
 
+// ---- criar pasta ----
 async function createFolder() {
   const name = document.getElementById('folderName').value.trim();
   if (!name) return setOut({ error: 'Informe o nome da pasta' });
@@ -107,18 +127,22 @@ async function createFolder() {
 
 // ---- cartas ----
 async function addManual() {
-  const folderId = Number(document.getElementById('folderIdManual')?.value);
-  const cardName = document.getElementById('cardName')?.value.trim();
-  if (!folderId || !cardName) return setOut({ error: 'Preencha Folder ID e Nome da carta' });
+  const folderId = Number(document.getElementById('folderIdManual').value);
+  const cardName  = document.getElementById('cardName').value.trim();
+  if (!folderId || !cardName) {
+    return setOut({ error:'Preencha Folder ID e Nome da carta' });
+  }
   const r = await postJson('/api/collections/cards/manual', { folderId, cardName });
   if (r) setOut(r.json ?? r);
-  if (currentFolderId) openFolder(currentFolderId); // atualiza a lista da pasta aberta
+  if (folderId) openFolder(folderId);
 }
 
 async function scanUpload() {
-  const folderId = Number(document.getElementById('folderIdScan')?.value);
-  const file = document.getElementById('fileScan')?.files[0];
-  if (!folderId || !file) return setOut({ error: 'Preencha Folder ID e selecione uma imagem' });
+  const folderId = Number(document.getElementById('folderIdScan').value);
+  const file = document.getElementById('fileScan').files[0];
+  if (!folderId || !file) {
+    return setOut({ error:'Preencha Folder ID e selecione uma imagem' });
+  }
 
   return new Promise((resolve, reject) => {
     const fd = new FormData();
@@ -141,21 +165,24 @@ async function scanUpload() {
       try {
         const json = JSON.parse(xhr.responseText || '{}');
         setOut(json);
-        if (currentFolderId) openFolder(currentFolderId); // atualiza a lista
+        if (folderId) openFolder(folderId);   // recarrega grid com a nova carta
         resolve(json);
       } catch {
         setOut({ raw: xhr.responseText });
         resolve(xhr.responseText);
       }
     };
-    xhr.onerror = () => { if (bar) bar.style.width = '0%'; reject(new Error('Falha no upload')); };
+    xhr.onerror = () => {
+      if (bar) bar.style.width = '0%';
+      reject(new Error('Falha no upload'));
+    };
     xhr.send(fd);
   });
 }
 
 // ---- logout ----
 async function doLogout() {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+  await fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' });
   location.href = '/';
 }
 
@@ -167,7 +194,7 @@ document.getElementById('btnScan')?.addEventListener('click', scanUpload);
 document.getElementById('logoutBtn')?.addEventListener('click', doLogout);
 
 // ---- boot ----
-(async function init() {
+(async function init(){
   if (await ensureAuth()) {
     await loadFolders();
   }

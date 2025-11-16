@@ -11,13 +11,13 @@ public class CollectionFolder {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(nullable = false)
     private Long userId;
 
     @Column(nullable=false, length=60)
     private String name;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(nullable = false)
     private Instant createdAt;
 
     // getters/setters

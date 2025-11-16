@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minha Coleção • Pokémon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#f5f6f8; --card:#fff; --fg:#111; --muted:#6b7280; --accent:#2563eb; --soft:#eef2ff; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg)}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+    .card{background:var(--card);border-radius:18px;padding:22px;box-shadow:0 10px 20px rgba(0,0,0,.06)}
+    .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1,h2{margin:0 0 12px}
+    .muted{color:var(--muted);font-size:14px}
+    .pill{padding:6px 10px;border-radius:999px;background:#e0e7ff;color:#3730a3;font-weight:600}
+    .row{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
+    input,button{padding:12px;border-radius:10px;border:1px solid #e5e7eb}
+    button{background:#f3f4f6;cursor:pointer}
+    button.primary{background:var(--accent);color:#fff;border-color:transparent}
+    ul{padding-left:18px;margin:8px 0}
+    .progress{height:10px;border-radius:999px;background:#e5e7eb;overflow:hidden}
+    .bar{height:100%;width:0;background:var(--accent);transition:width .2s}
+
+    /* ====== GALERIA ====== */
+    .folder-head{margin-top:26px}
+    .cards-toolbar{display:flex;align-items:center;justify-content:space-between;margin:8px 0 12px}
+    .grid-cards{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+      gap:16px;
+    }
+    .p-card{
+      border:1px solid #eef0f3;
+      border-radius:14px;
+      background:#fff;
+      box-shadow:0 2px 8px rgba(0,0,0,.04);
+      overflow:hidden;
+      transition:transform .08s ease, box-shadow .08s ease;
+    }
+    .p-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+    .p-thumb{
+      position:relative;
+      width:100%;
+      height:220px;
+      background:#f8fafc;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .p-thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover; /* troque para 'contain' se preferir ver a carta inteira */
+      display:block;
+    }
+    .p-thumb .noimg{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      color:#94a3b8;
+      background:linear-gradient(135deg,#f1f5f9,#e2e8f0);
+    }
+    .p-body{padding:10px 12px}
+    .p-name{font-weight:700}
+    .p-meta{display:flex;gap:8px;align-items:center;color:#6b7280;font-size:12px;margin-top:6px}
+    .badge{font-size:11px;background:var(--soft);color:#3730a3;border-radius:8px;padding:2px 6px;font-weight:600}
+    .right-actions{display:flex;gap:8px}
+    .thumb-link{position:absolute;inset:0}
+    .empty{padding:14px;color:var(--muted);grid-column:1/-1;text-align:center;background:#fafafa;border:1px dashed #e5e7eb;border-radius:12px}
+    pre{background:#0f172a;color:#d1d5db;padding:14px;border-radius:10px;overflow:auto}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="header">
+        <div>
+          <h1>Minha Coleção</h1>
+          <div class="muted">Bem-vindo, <span id="meEmail" class="pill">...</span></div>
+        </div>
+        <div class="row">
+          <button id="logoutBtn">Sair</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <section style="flex:1 1 340px;min-width:300px">
+          <h2>Minhas Pastas</h2>
+          <div class="row">
+            <input id="folderName" type="text" placeholder="Nome da pasta" />
+            <button class="primary" id="btnCreateFolder">Criar pasta</button>
+            <button id="btnReloadFolders">Atualizar</button>
+          </div>
+          <ul id="foldersList"></ul>
+        </section>
+
+        <section style="flex:2 1 520px;min-width:320px">
+          <h2>Adicionar carta manualmente</h2>
+          <div class="row">
+            <input id="folderIdManual" type="number" placeholder="Folder ID" />
+            <input id="cardName" type="text" placeholder="Nome da carta/Pokémon" />
+            <button class="primary" id="btnAddManual">Adicionar</button>
+          </div>
+
+          <h2 style="margin-top:24px;">Scanner (upload de imagem)</h2>
+          <div class="row">
+            <input id="folderIdScan" type="number" placeholder="Folder ID" />
+            <input id="fileScan" type="file" accept="image/*" />
+            <button id="btnScan" class="primary">Enviar</button>
+          </div>
+          <div class="progress" aria-hidden="true"><div id="bar" class="bar"></div></div>
+        </section>
+      </div>
+
+      <!-- Cabeçalho + galeria -->
+      <div class="folder-head">
+        <h2>Conteúdo da pasta</h2>
+        <div id="folderHeader" class="muted">Selecione uma pasta para visualizar.</div>
+        <div class="cards-toolbar">
+          <span class="muted" id="countInfo"></span>
+          <div class="right-actions">
+            <a href="/social.html" class="pill" style="text-decoration:none;background:#e0e7ff;">Rede social</a>
+          </div>
+        </div>
+        <div id="cardsGrid" class="grid-cards">
+          <div class="empty">—</div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:26px;">Saída</h2>
+      <pre id="output">{}</pre>
+    </div>
+  </div>
+
+  <script>
+    // ===== helpers base =====
+    const out = document.getElementById('output');
+    const meEmail = document.getElementById('meEmail');
+    const bar = document.getElementById('bar');
+    let currentFolderId = null;
+
+    function setOut(obj){ out.textContent = typeof obj==='string' ? obj : JSON.stringify(obj,null,2); }
+    async function getJson(url){
+      const r = await fetch(url,{credentials:'same-origin'});
+      if(r.status===401){ location.href='/'; return null; }
+      return r.json();
+    }
+    async function postJson(url,body){
+      const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
+      if(r.status===401){ location.href='/'; return null; }
+      const t = await r.text(); try{ return {ok:r.ok,json:JSON.parse(t)} }catch{ return {ok:r.ok,json:{raw:t}} }
+    }
+
+    // ===== sessão =====
+    async function ensureAuth(){
+      const me = await getJson('/api/auth/me');
+      if(!me) return false;
+      meEmail.textContent = me.email || '(sem e-mail)';
+      return true;
+    }
+
+    // ===== pastas =====
+    async function loadFolders(){
+      const arr = await getJson('/api/collections/folders'); if(!arr) return;
+      const ul = document.getElementById('foldersList');
+      ul.innerHTML = arr.length ? arr.map(f=>`
+        <li>
+          <strong>#${f.id}</strong> — ${f.name}
+          <button data-open="${f.id}" style="margin-left:8px;">Ver</button>
+        </li>
+      `).join('') : '<li class="muted">Nenhuma pasta</li>';
+      ul.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFolder(Number(b.dataset.open)));
+      setOut(arr);
+    }
+
+    // ===== abrir pasta => GALERIA =====
+    async function openFolder(folderId){
+      const r = await getJson(`/api/collections/folders/${folderId}`); if(!r) return;
+      currentFolderId = folderId;
+
+      // header + contagem + preencher IDs dos forms
+      document.getElementById('folderHeader').textContent = `Pasta #${r.id} — ${r.name}`;
+      document.getElementById('countInfo').textContent = `${(r.items?.length||0)} item(s)`;
+      const f1 = document.getElementById('folderIdManual'), f2 = document.getElementById('folderIdScan');
+      if(f1) f1.value = folderId; if(f2) f2.value = folderId;
+
+      // grid
+      const grid = document.getElementById('cardsGrid');
+      if(!r.items || r.items.length===0){
+        grid.innerHTML = '<div class="empty">Sem cartas nesta pasta.</div>';
+      }else{
+        grid.innerHTML = r.items.map(it=>{
+          const name = it.pokemonName || 'Unknown';
+          const path = it.imagePath || null;
+          const thumb = path
+            ? `<img loading="lazy" alt="${name}" src="${path}">`
+            : `<div class="noimg">${name}</div>`;
+          return `
+            <div class="p-card">
+              <div class="p-thumb">
+                ${thumb}
+                ${path ? `<a class="thumb-link" href="${path}" target="_blank" aria-label="Abrir imagem"></a>` : ``}
+              </div>
+              <div class="p-body">
+                <div class="p-name">${name}</div>
+                <div class="p-meta">
+                  ${it.source ? `<span class="badge">${it.source}</span>` : ``}
+                  ${it.cardName && it.cardName!==name ? `<span title="Nome da carta" class="muted">• ${it.cardName}</span>` : ``}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+      setOut(r);
+    }
+
+    // ===== criar pasta / adicionar / scan =====
+    async function createFolder(){
+      const name = document.getElementById('folderName').value.trim();
+      if(!name){ setOut({error:'Informe o nome da pasta'}); return; }
+      const r = await postJson('/api/collections/folders',{name}); if(r) setOut(r.json);
+      loadFolders();
+    }
+    async function addManual(){
+      const folderId = Number(document.getElementById('folderIdManual').value);
+      const cardName = document.getElementById('cardName').value.trim();
+      if(!folderId || !cardName){ setOut({error:'Preencha Folder ID e Nome da carta'}); return; }
+      const r = await postJson('/api/collections/cards/manual',{folderId,cardName});
+      if(r) setOut(r.json); if(currentFolderId) openFolder(currentFolderId);
+    }
+    async function scanUpload(){
+      const folderId = Number(document.getElementById('folderIdScan').value);
+      const file = document.getElementById('fileScan').files[0];
+      if(!folderId || !file){ setOut({error:'Preencha Folder ID e selecione uma imagem'}); return; }
+      await new Promise((resolve,reject)=>{
+        const fd = new FormData(); fd.append('folderId',folderId); fd.append('file',file);
+        const xhr = new XMLHttpRequest(); xhr.open('POST','/api/collections/cards/scan',true); xhr.withCredentials=true;
+        xhr.upload.onprogress = (e)=>{ if(e.lengthComputable) document.getElementById('bar').style.width = Math.round(e.loaded/e.total*100)+'%'; };
+        xhr.onload = ()=>{ document.getElementById('bar').style.width='0%'; try{ setOut(JSON.parse(xhr.responseText||'{}')); }catch{ setOut({raw:xhr.responseText}); } resolve(); };
+        xhr.onerror = ()=>{ document.getElementById('bar').style.width='0%'; reject(new Error('Falha no upload')); };
+        xhr.send(fd);
+      });
+      if(currentFolderId) openFolder(currentFolderId);
+    }
+
+    // ===== logout & boot =====
+    document.getElementById('btnReloadFolders').onclick = loadFolders;
+    document.getElementById('btnCreateFolder').onclick  = createFolder;
+    document.getElementById('btnAddManual').onclick     = addManual;
+    document.getElementById('btnScan').onclick          = scanUpload;
+    document.getElementById('logoutBtn').onclick        = async()=>{ await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'}); location.href='/' };
+
+    (async function init(){ if(await ensureAuth()) await loadFolders(); })();
+  </script>
+</body>
+</html>

@@ -9,6 +9,11 @@ spring:
     show-sql: true
     properties:
       hibernate.format_sql: true
+  web:
+    resources:
+      static-locations: file:../../frontend/
+      cache:
+        period: 0
 
 server:
   port: 8080
@@ -18,3 +23,5 @@ app:
     tesseractPath: "C:/Program Files/Tesseract-OCR/tesseract.exe"
     datapath: "C:/Program Files/Tesseract-OCR/tessdata"
     lang: "eng"
+
+
