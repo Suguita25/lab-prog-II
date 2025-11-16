@@ -9,70 +9,94 @@
 <body>
 <div class="wrap">
   <div class="card-shell">
-    <div class="header">
+    <!-- Cabeçalho -->
+    <header class="header">
       <div>
         <h1>Minha Coleção</h1>
         <div class="muted">
           Bem-vindo, <span id="meEmail" class="pill">...</span>
         </div>
       </div>
-      <div class="row">
-        <button id="logoutBtn">Sair</button>
-      </div>
-    </div>
+      <button id="logoutBtn" class="btn btn-ghost">Sair</button>
+    </header>
 
-    <div class="grid">
-      <section>
-        <h2>Minhas Pastas</h2>
-        <div class="row">
-          <input id="folderName" type="text" placeholder="Nome da pasta" />
-          <button class="primary" id="btnCreateFolder">Criar pasta</button>
-          <button id="btnReloadFolders">Atualizar</button>
-        </div>
-        <ul id="foldersList"></ul>
+    <div class="layout">
+      <!-- Coluna esquerda: pastas + scanner -->
+      <section class="left-column">
+        <!-- Minhas pastas -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Minhas pastas</h2>
+          </div>
+
+          <div class="panel-body">
+            <div class="inline-form">
+              <input id="folderName" type="text" placeholder="Nome da pasta" />
+              <button id="btnCreateFolder" class="btn">Criar pasta</button>
+            </div>
+
+            <button id="btnReloadFolders" class="btn btn-ghost" style="margin-top:8px;">
+              Atualizar lista
+            </button>
+
+            <ul id="foldersList" class="folder-list">
+              <!-- preenchido via JS -->
+            </ul>
+          </div>
+        </section>
+
+        <!-- Scanner / upload -->
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Scanner de cartas (upload)</h3>
+          </div>
+          <div class="panel-body">
+            <label class="field">
+              <span class="field-label">ID da pasta</span>
+              <input id="folderIdScan" type="number" placeholder="ex: 1" />
+            </label>
+
+            <label class="field">
+              <span class="field-label">Imagem da carta</span>
+              <input id="scanFile" type="file" accept="image/*" />
+            </label>
+
+            <button id="btnScan" class="btn btn-full">
+              Enviar imagem e ler carta (OCR)
+            </button>
+
+            <div class="progress-wrap">
+              <div id="bar" class="progress-bar"></div>
+            </div>
+          </div>
+        </section>
       </section>
 
-      <section>
-        <h2>Adicionar carta manualmente</h2>
-        <div class="row">
-          <input id="folderIdManual" type="number" placeholder="Folder ID" />
-          <input id="cardName" type="text" placeholder="Nome da carta/Pokémon" />
-          <button class="primary" id="btnAddManual">Adicionar</button>
+      <!-- Coluna direita: cards com imagem -->
+      <section class="right-column">
+        <div class="cards-header">
+          <div>
+            <h2>Conteúdo da pasta</h2>
+            <div id="folderHeader" class="muted">
+              Selecione uma pasta para visualizar.
+            </div>
+          </div>
         </div>
 
-        <h2 style="margin-top:24px;">Scanner (upload de imagem)</h2>
-        <div class="row">
-          <input id="folderIdScan" type="number" placeholder="Folder ID" />
-          <input id="fileScan" type="file" accept="image/*" />
-          <button id="btnScan" class="primary">Enviar</button>
+        <!-- Grid estilo marketplace -->
+        <div id="cardsGrid" class="cards-grid">
+          <!-- preenchido via JS -->
         </div>
-        <div class="progress" aria-hidden="true">
-          <div id="bar" class="bar"></div>
+
+        <div class="footer-row">
+          <a href="/social.html" class="pill" style="text-decoration:none; background:#e0e7ff;">
+            Rede social
+          </a>
+          <span class="muted" style="font-size:12px;">Debug da API:</span>
         </div>
+        <pre id="output">{}</pre>
       </section>
     </div>
-
-    <!-- GRID DE CARTAS -->
-    <div class="cards-header">
-      <div>
-        <h2>Conteúdo da pasta</h2>
-        <div id="folderHeader" class="muted">
-          Selecione uma pasta para visualizar.
-        </div>
-      </div>
-    </div>
-
-    <div id="cardsGrid" class="cards-grid">
-      <!-- cards são preenchidos via JS -->
-    </div>
-
-    <div class="footer-row">
-      <a href="/social.html" class="pill" style="text-decoration:none; background:#e0e7ff;">
-        Rede social
-      </a>
-      <span class="muted" style="font-size:12px;">Debug da API:</span>
-    </div>
-    <pre id="output">{}</pre>
   </div>
 </div>
 

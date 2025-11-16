@@ -65,7 +65,7 @@ public class PokemonDictionary {
             i++;
         }
         // limiar de confiança — ajuste conforme sua preferência
-        if (bestScore >= 0.78) return Optional.of(best);
+        if (bestScore >= 0.70) return Optional.of(best);
         return Optional.empty();
     }
 
@@ -97,7 +97,7 @@ public class PokemonDictionary {
                 idx++;
             }
         }
-        if (best != null && bestScore >= 0.78) return Optional.of(best);
+        if (best != null && bestScore >= 0.70) return Optional.of(best);
         return Optional.empty();
     }
 

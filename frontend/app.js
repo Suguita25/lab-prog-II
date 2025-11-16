@@ -1,4 +1,4 @@
-// ---- helpers base ----
+// ---- helpers ----
 const out = document.getElementById('output');
 const meEmail = document.getElementById('meEmail');
 const bar = document.getElementById('bar');
@@ -19,68 +19,116 @@ async function getJson(url) {
 async function postJson(url, body) {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   if (res.status === 401) { location.href = '/'; return null; }
-  const text = await res.text();
-  try { return { ok: res.ok, json: JSON.parse(text) }; }
-  catch { return { ok: res.ok, json: { raw: text } }; }
+  return res.json();
 }
 
-// ---- sessão ----
+// ---- auth ----
+
 async function ensureAuth() {
-  const me = await getJson('/api/auth/me');
-  if (!me) return false;
-  if (meEmail) meEmail.textContent = me.email || '(sem e-mail)';
-  return true;
+  try {
+    const me = await getJson('/api/auth/me');
+    if (!me) return false;
+    if (meEmail) meEmail.textContent = me.email || '(sem email)';
+    return true;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
 }
 
 // ---- pastas ----
+
 async function loadFolders() {
-  const arr = await getJson('/api/collections/folders');
-  if (!arr) return;
-  const ul = document.getElementById('foldersList');
-  if (!ul) return;
+  const list = document.getElementById('foldersList');
+  if (!list) return;
 
-  ul.innerHTML = arr.length
-    ? arr.map(f => `
-        <li>
+  list.innerHTML = '<li class="muted">Carregando...</li>';
+
+  try {
+    const folders = await getJson('/api/collections/folders');
+    if (!folders || !folders.length) {
+      list.innerHTML = '<li class="muted">Nenhuma pasta criada ainda.</li>';
+      setOut(folders || {});
+      return;
+    }
+
+    list.innerHTML = '';
+    folders.forEach(f => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <div>
           <strong>#${f.id}</strong> — ${f.name}
-          <button data-open="${f.id}" style="margin-left:8px;">Abrir</button>
-        </li>
-      `).join('')
-    : '<li class="muted">Nenhuma pasta</li>';
+        </div>
+        <button class="btn btn-ghost btn-xs" data-open="${f.id}">Abrir</button>
+      `;
+      list.appendChild(li);
+    });
 
-  ul.querySelectorAll('button[data-open]').forEach(btn => {
-    btn.addEventListener('click', () => openFolder(Number(btn.dataset.open)));
-  });
+    list.querySelectorAll('[data-open]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-open'), 10);
+        openFolder(id);
+      });
+    });
 
-  setOut(arr);
+    setOut(folders);
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = '<li class="muted">Erro ao carregar pastas.</li>';
+  }
 }
 
-// ---- abrir pasta + montar GRID de cartas ----
+async function createFolder() {
+  const nameInput = document.getElementById('folderName');
+  if (!nameInput) return;
+  const name = nameInput.value.trim();
+  if (!name) {
+    alert('Informe um nome para a pasta.');
+    return;
+  }
+  const r = await postJson('/api/collections/folders', { name });
+  setOut(r);
+  nameInput.value = '';
+  await loadFolders();
+}
+
+// ---- cards / conteúdo da pasta ----
+
 async function openFolder(folderId) {
-  const r = await getJson(`/api/collections/folders/${folderId}`);
-  if (!r) return;
+  try {
+    const r = await getJson(`/api/collections/folders/${folderId}`);
+    if (!r) return;
 
-  const head = document.getElementById('folderHeader');
-  if (head) head.textContent = `Pasta #${r.id} — ${r.name}`;
+    setOut(r);
 
-  // preencher IDs dos formulários
-  document.getElementById('folderIdManual').value = folderId;
-  document.getElementById('folderIdScan').value   = folderId;
+    const head = document.getElementById('folderHeader');
+    if (head) {
+      head.textContent = `Pasta #${r.id} — ${r.name}`;
+    }
 
-  const grid = document.getElementById('cardsGrid');
-  if (!grid) return;
+    // preencher ID do scanner
+    const inpScan = document.getElementById('folderIdScan');
+    if (inpScan) inpScan.value = folderId;
 
-  if (!r.items || r.items.length === 0) {
-    grid.innerHTML = '<div class="muted" style="padding:10px;">Sem cartas nesta pasta.</div>';
-  } else {
+    const grid = document.getElementById('cardsGrid');
+    if (!grid) return;
+
+    if (!r.items || r.items.length === 0) {
+      grid.innerHTML = '<div class="muted" style="padding:10px;">Sem cartas nesta pasta.</div>';
+      return;
+    }
+
+    // monta cards com botão de remover
     grid.innerHTML = r.items.map(it => {
-      const pokemonName = it.pokemonName || 'Unknown';
-      const baseName = (it.cardName && it.cardName !== it.pokemonName) ? it.cardName : '';
+      const pokemonName = it.pokemonName || 'Desconhecido';
+      const baseName = it.cardName && it.cardName !== pokemonName
+        ? it.cardName
+        : '';
       const hasImage = !!it.imagePath;
 
       return `
@@ -96,105 +144,198 @@ async function openFolder(folderId) {
             <h3 class="card-title">${pokemonName}</h3>
             ${
               baseName
-                ? `<div class="card-sub">${baseName}</div>`
+                ? `<div class="card-subtitle">${baseName}</div>`
                 : ''
             }
-            <div class="card-meta">
-              ${it.source ? `<span class="pill sm">${it.source}</span>` : ''}
-              ${
-                hasImage
-                  ? `<a class="link" href="${it.imagePath}" target="_blank">abrir imagem</a>`
-                  : ''
-              }
-            </div>
+              <div class="card-meta">
+                <span class="badge">${it.source || 'manual'}</span>
+                <div class="card-actions">
+                  ${
+                    hasImage
+                      ? `<a href="${it.imagePath}" target="_blank" class="link">Abrir imagem</a>`
+                      : ''
+                  }
+                  <button
+                    class="btn-icon btn-secondary"
+                    data-edit="${it.id}"
+                    data-folder="${folderId}"
+                    data-name="${(it.cardName || it.pokemonName || '').replace(/"/g, '&quot;')}"
+                  >
+                    Editar nome
+                  </button>
+                  <button class="btn-icon btn-danger" data-del="${it.id}" data-folder="${folderId}">
+                    Remover
+                  </button>
+                </div>
+              </div>
           </div>
         </article>
       `;
     }).join('');
+
+    // listeners de remover
+    grid.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cardId = parseInt(btn.getAttribute('data-del'), 10);
+        const fid = parseInt(btn.getAttribute('data-folder'), 10);
+        deleteCard(cardId, fid);
+      });
+    });
+
+        // adiciona listeners dos botões de editar nome
+    grid.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cardId = parseInt(btn.getAttribute('data-edit'), 10);
+        const fid = parseInt(btn.getAttribute('data-folder'), 10);
+        const currentName = btn.getAttribute('data-name') || '';
+        editCardName(cardId, fid, currentName);
+      });
+    });
+
+
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao carregar pasta.');
+  }
+}
+
+// ---- remover carta ----
+
+async function deleteCard(cardId, folderId) {
+  if (!confirm('Tem certeza que deseja remover esta carta da pasta?')) {
+    return;
   }
 
-  setOut(r);
-}
+  try {
+    const res = await fetch(`/api/collections/cards/${cardId}`, {
+      method: 'DELETE',
+      credentials: 'same-origin'
+    });
 
-// ---- criar pasta ----
-async function createFolder() {
-  const name = document.getElementById('folderName').value.trim();
-  if (!name) return setOut({ error: 'Informe o nome da pasta' });
-  const r = await postJson('/api/collections/folders', { name });
-  if (r) setOut(r.json);
-  loadFolders();
-}
+    if (res.status === 401) {
+      location.href = '/';
+      return;
+    }
 
-// ---- cartas ----
-async function addManual() {
-  const folderId = Number(document.getElementById('folderIdManual').value);
-  const cardName  = document.getElementById('cardName').value.trim();
-  if (!folderId || !cardName) {
-    return setOut({ error:'Preencha Folder ID e Nome da carta' });
+    if (!res.ok) {
+      alert('Erro ao remover carta.');
+      return;
+    }
+
+    setOut({ deletedCardId: cardId });
+    await openFolder(folderId);
+
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao remover carta.');
   }
-  const r = await postJson('/api/collections/cards/manual', { folderId, cardName });
-  if (r) setOut(r.json ?? r);
-  if (folderId) openFolder(folderId);
 }
 
+// editar nome da carta
+async function editCardName(cardId, folderId, currentName) {
+  const novoNome = prompt('Novo nome da carta:', currentName || '');
+  if (novoNome === null) return;        // cancelou
+  if (!novoNome.trim()) {
+    alert('O nome não pode ser vazio.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/collections/cards/${cardId}`, {
+      method: 'PATCH',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cardName: novoNome.trim() })
+    });
+
+    if (res.status === 401) {
+      location.href = '/';
+      return;
+    }
+
+    if (!res.ok) {
+      alert('Erro ao editar nome da carta.');
+      return;
+    }
+
+    const json = await res.json();
+    setOut(json);
+    await openFolder(folderId); // recarrega a pasta pra refletir o novo nome
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao editar nome da carta.');
+  }
+}
+
+
+// upload / scan
 async function scanUpload() {
-  const folderId = Number(document.getElementById('folderIdScan').value);
-  const file = document.getElementById('fileScan').files[0];
-  if (!folderId || !file) {
-    return setOut({ error:'Preencha Folder ID e selecione uma imagem' });
+  const folderId = parseInt(document.getElementById('folderIdScan')?.value || '0', 10);
+  const fileInput = document.getElementById('scanFile');
+  if (!folderId) { alert('Informe o ID da pasta.'); return; }
+  if (!fileInput || !fileInput.files.length) {
+    alert('Selecione uma imagem.');
+    return;
   }
 
-  return new Promise((resolve, reject) => {
-    const fd = new FormData();
-    fd.append('folderId', folderId);
-    fd.append('file', file);
+  const form = new FormData();
+  form.append('folderId', folderId);
+  form.append('file', fileInput.files[0]);
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/collections/cards/scan', true);
-    xhr.withCredentials = true;
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/collections/cards/scan', true);
+  xhr.withCredentials = true;
 
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && bar) {
-        const pct = Math.round((e.loaded / e.total) * 100);
-        bar.style.width = pct + '%';
-      }
-    };
-    xhr.onload = () => {
-      if (bar) bar.style.width = '0%';
-      if (xhr.status === 401) { location.href = '/'; return; }
-      try {
-        const json = JSON.parse(xhr.responseText || '{}');
-        setOut(json);
-        if (folderId) openFolder(folderId);   // recarrega grid com a nova carta
-        resolve(json);
-      } catch {
-        setOut({ raw: xhr.responseText });
-        resolve(xhr.responseText);
-      }
-    };
-    xhr.onerror = () => {
-      if (bar) bar.style.width = '0%';
-      reject(new Error('Falha no upload'));
-    };
-    xhr.send(fd);
-  });
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable && bar) {
+      const pct = Math.round((e.loaded / e.total) * 100);
+      bar.style.width = pct + '%';
+    }
+  };
+
+  xhr.onload = () => {
+    if (bar) bar.style.width = '0%';
+    if (xhr.status === 401) { location.href = '/'; return; }
+    try {
+      const json = JSON.parse(xhr.responseText || '{}');
+      setOut(json);
+      openFolder(folderId);
+      fileInput.value = '';
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  xhr.onerror = () => {
+    if (bar) bar.style.width = '0%';
+    alert('Erro no upload.');
+  };
+
+  xhr.send(form);
 }
 
-// ---- logout ----
+// logout
 async function doLogout() {
-  await fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' });
-  location.href = '/';
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin'
+    });
+  } catch (e) {
+    console.error(e);
+  } finally {
+    location.href = '/';
+  }
 }
 
 // ---- listeners ----
 document.getElementById('btnReloadFolders')?.addEventListener('click', loadFolders);
 document.getElementById('btnCreateFolder')?.addEventListener('click', createFolder);
-document.getElementById('btnAddManual')?.addEventListener('click', addManual);
 document.getElementById('btnScan')?.addEventListener('click', scanUpload);
 document.getElementById('logoutBtn')?.addEventListener('click', doLogout);
 
 // ---- boot ----
-(async function init(){
+(async function init() {
   if (await ensureAuth()) {
     await loadFolders();
   }

@@ -1,4 +1,3 @@
-// controller/CollectionController.java
 package com.exemplo.auth.controller;
 
 import com.exemplo.auth.dto.AddCardManualRequest;
@@ -18,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +54,24 @@ public class CollectionController {
     @ResponseStatus(code = org.springframework.http.HttpStatus.UNAUTHORIZED)
     private static class Unauthorized extends RuntimeException {}
 
+    // Converte caminhos antigos ("data\\users\\...") para URL /files/...
+    private String normalizeImagePath(String imagePath) {
+        if (imagePath == null || imagePath.isBlank()) return null;
+        if (imagePath.startsWith("/files/")) return imagePath;
+
+        Path dataRoot = Paths.get("data").toAbsolutePath().normalize();
+        Path absoluteTarget = Paths.get(imagePath).toAbsolutePath().normalize();
+
+        try {
+            Path relative = dataRoot.relativize(absoluteTarget);
+            String rel = relative.toString().replace(File.separatorChar, '/');
+            return "/files/" + rel;
+        } catch (IllegalArgumentException e) {
+            String abs = absoluteTarget.toString().replace(File.separatorChar, '/');
+            return "/files/" + abs;
+        }
+    }
+
     // -------- endpoints --------
 
     @PostMapping("/folders")
@@ -72,13 +90,30 @@ public class CollectionController {
     @GetMapping("/folders/{id}")
     public ResponseEntity<?> getFolder(@PathVariable Long id, HttpSession session) {
         Long uid = currentUserId(session);
+
         CollectionFolder f = folderRepo.findByIdAndUserId(id, uid)
                 .orElseThrow(() -> new IllegalArgumentException("folder not found"));
+
         List<CardItem> items = itemRepo.findByFolderIdAndUserId(id, uid);
+
+        // Monta DTO manualmente, normalizando imagePath
+        List<Map<String, Object>> itemDtos = items.stream()
+                .map(it -> Map.<String, Object>of(
+                        "id", it.getId(),
+                        "folderId", it.getFolderId(),
+                        "userId", it.getUserId(),
+                        "cardName", it.getCardName(),
+                        "pokemonName", it.getPokemonName(),
+                        "source", it.getSource(),
+                        "imagePath", normalizeImagePath(it.getImagePath()),
+                        "createdAt", it.getCreatedAt()
+                ))
+                .toList();
+
         return ResponseEntity.ok(Map.of(
                 "id", f.getId(),
                 "name", f.getName(),
-                "items", items
+                "items", itemDtos
         ));
     }
 
@@ -93,61 +128,84 @@ public class CollectionController {
                          @RequestParam("file") MultipartFile file,
                          HttpSession session) throws Exception {
         Long uid = currentUserId(session);
-        // salva arquivo temporário e chama o OCR
-        File tmp = File.createTempFile("card_", "_" + (file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename()));
+
+        // salva arquivo temporário
+        File tmp = File.createTempFile(
+                "card_",
+                "_" + (file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename())
+        );
         file.transferTo(tmp);
-        Path storage = Path.of("data", "users", String.valueOf(uid), "images");
+
+        // pasta física: data/users/{uid}/images
+        Path storage = Paths.get("data", "users", String.valueOf(uid), "images");
+
         return service.scanAndAdd(uid, folderId, tmp, storage);
     }
 
-/* 
-// adiciona carta com nome + imagem (opcional)
-@PostMapping(value = "/cards", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-public CardItem addCard(
-        @RequestParam Long folderId,
-        @RequestParam String cardName,
-        @RequestParam(value = "file", required = false) MultipartFile file,
-        HttpSession session
-) throws Exception {
-    Long uid = currentUserId(session);
-    if (file != null && !file.isEmpty()) {
-        File tmp = File.createTempFile("card_", "_" + (file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename()));
-        file.transferTo(tmp);
-        Path storage = Path.of("data", "users", String.valueOf(uid), "images");
-        return service.addWithOptionalImage(uid, folderId, cardName, tmp, storage);
-    } else {
-        // sem imagem, apenas cadastra com o nome informado
-        return service.addManual(uid, folderId, cardName);
+    /*
+    // adiciona carta com nome + imagem (opcional)
+    @PostMapping(value = "/cards", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CardItem addCard(
+            @RequestParam Long folderId,
+            @RequestParam String cardName,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            HttpSession session
+    ) throws Exception {
+        Long uid = currentUserId(session);
+        if (file != null && !file.isEmpty()) {
+            File tmp = File.createTempFile(
+                    "card_",
+                    "_" + (file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename())
+            );
+            file.transferTo(tmp);
+            Path storage = Paths.get("data", "users", String.valueOf(uid), "images");
+            return service.addWithOptionalImage(uid, folderId, cardName, tmp, storage);
+        } else {
+            return service.addManual(uid, folderId, cardName);
+        }
     }
-}
-*/
-
+    */
 
     // renomear pasta
-@PatchMapping("/folders/{id}")
-public ResponseEntity<?> renameFolder(@PathVariable Long id,
-                                      @RequestBody Map<String,String> body,
-                                      HttpSession session) {
-    Long uid = currentUserId(session);
-    String newName = body.getOrDefault("name", "").trim();
-    if (newName.isEmpty()) return ResponseEntity.badRequest().body(Map.of("error","name required"));
-    var f = service.renameFolder(uid, id, newName);
-    return ResponseEntity.ok(Map.of("id", f.getId(), "name", f.getName()));
-}
+    @PatchMapping("/folders/{id}")
+    public ResponseEntity<?> renameFolder(@PathVariable Long id,
+                                          @RequestBody Map<String,String> body,
+                                          HttpSession session) {
+        Long uid = currentUserId(session);
+        String newName = body.getOrDefault("name", "").trim();
+        if (newName.isEmpty()) return ResponseEntity.badRequest().body(Map.of("error","name required"));
+        var f = service.renameFolder(uid, id, newName);
+        return ResponseEntity.ok(Map.of("id", f.getId(), "name", f.getName()));
+    }
 
-// excluir pasta (apaga cartas dentro)
-@DeleteMapping("/folders/{id}")
-public ResponseEntity<?> deleteFolder(@PathVariable Long id, HttpSession session) {
-    Long uid = currentUserId(session);
-    service.deleteFolder(uid, id);
-    return ResponseEntity.noContent().build();
-}
+    // excluir pasta (apaga cartas dentro)
+    @DeleteMapping("/folders/{id}")
+    public ResponseEntity<?> deleteFolder(@PathVariable Long id, HttpSession session) {
+        Long uid = currentUserId(session);
+        service.deleteFolder(uid, id);
+        return ResponseEntity.noContent().build();
+    }
 
-// excluir carta
-@DeleteMapping("/cards/{id}")
-public ResponseEntity<?> deleteCard(@PathVariable Long id, HttpSession session) {
-    Long uid = currentUserId(session);
-    service.deleteCard(uid, id);
-    return ResponseEntity.noContent().build();
-}
+    // excluir carta
+    @DeleteMapping("/cards/{id}")
+    public ResponseEntity<?> deleteCard(@PathVariable Long id, HttpSession session) {
+        Long uid = currentUserId(session);
+        service.deleteCard(uid, id);
+        return ResponseEntity.noContent().build();
+    }
+
+        // editar nome da carta
+    @PatchMapping("/cards/{id}")
+    public ResponseEntity<?> renameCard(@PathVariable Long id,
+                                        @RequestBody Map<String,String> body,
+                                        HttpSession session) {
+        Long uid = currentUserId(session);
+        String newName = body.getOrDefault("cardName", "").trim();
+        if (newName.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "cardName required"));
+        }
+        var updated = service.renameCard(uid, id, newName);
+        return ResponseEntity.ok(updated);
+    }
+
 }
