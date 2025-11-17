@@ -221,26 +221,26 @@ public class CollectionService {
         itemRepo.deleteById(cardId);
     }
 
-    // dentro de CollectionService
+   
+// dentro de CollectionService
 
-    @Transactional
-    public CardItem renameCard(Long userId, Long cardId, String newName) {
-        CardItem it = itemRepo.findById(cardId)
-                .orElseThrow(() -> new IllegalArgumentException("card not found"));
+@Transactional
+public CardItem renameCard(Long userId, Long cardId, String newName) {
+    CardItem it = itemRepo.findById(cardId)
+            .orElseThrow(() -> new IllegalArgumentException("card not found"));
 
-        if (!Objects.equals(it.getUserId(), userId)) {
-            throw new IllegalArgumentException("card not found");
-        }
-
-        it.setCardName(newName);
-
-        // tenta normalizar para um nome de Pokémon conhecido
-        String normalized = dict.bestMatchLoose(newName)
-                .orElse(newName);
-        it.setPokemonName(normalized);
-
-        return itemRepo.save(it);
+    if (!Objects.equals(it.getUserId(), userId)) {
+        throw new IllegalArgumentException("card not found");
     }
+
+    // Edição manual: usa EXATAMENTE o que o usuário digitou
+    it.setPokemonName(newName.trim());
+
+    return itemRepo.save(it);
+}
+
+
+
 
 
     /* ==================== Helpers ==================== */

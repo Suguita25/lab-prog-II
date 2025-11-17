@@ -194,18 +194,20 @@ public class CollectionController {
         return ResponseEntity.noContent().build();
     }
 
-        // editar nome da carta
+    // editar nome da carta (pokemonName)
     @PatchMapping("/cards/{id}")
     public ResponseEntity<?> renameCard(@PathVariable Long id,
                                         @RequestBody Map<String,String> body,
                                         HttpSession session) {
         Long uid = currentUserId(session);
-        String newName = body.getOrDefault("cardName", "").trim();
+        String newName = body.getOrDefault("pokemonName", "").trim();
         if (newName.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "cardName required"));
+            return ResponseEntity.badRequest().body(Map.of("error", "pokemonName required"));
         }
         var updated = service.renameCard(uid, id, newName);
         return ResponseEntity.ok(updated);
     }
+
+
 
 }

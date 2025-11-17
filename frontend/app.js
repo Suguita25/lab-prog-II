@@ -147,27 +147,30 @@ async function openFolder(folderId) {
                 ? `<div class="card-subtitle">${baseName}</div>`
                 : ''
             }
-              <div class="card-meta">
-                <span class="badge">${it.source || 'manual'}</span>
-                <div class="card-actions">
-                  ${
-                    hasImage
-                      ? `<a href="${it.imagePath}" target="_blank" class="link">Abrir imagem</a>`
-                      : ''
-                  }
-                  <button
-                    class="btn-icon btn-secondary"
-                    data-edit="${it.id}"
-                    data-folder="${folderId}"
-                    data-name="${(it.cardName || it.pokemonName || '').replace(/"/g, '&quot;')}"
-                  >
-                    Editar nome
-                  </button>
-                  <button class="btn-icon btn-danger" data-del="${it.id}" data-folder="${folderId}">
-                    Remover
-                  </button>
-                </div>
-              </div>
+            <div class="card-meta">
+            <span class="badge">${it.source || 'manual'}</span>
+            <div class="card-actions">
+              ${
+                hasImage
+                  ? `<a href="${it.imagePath}" target="_blank" class="link">Abrir imagem</a>`
+                  : ''
+              }
+              <button
+                class="btn-icon btn-secondary"
+                data-edit="${it.id}"
+                data-folder="${folderId}"
+                data-name="${(it.pokemonName || it.cardName || '').replace(/"/g, '&quot;')}"
+
+              >
+                Editar nome
+              </button>
+
+              <button class="btn-icon btn-danger" data-del="${it.id}" data-folder="${folderId}">
+                Remover
+              </button>
+            </div>
+          </div>
+
           </div>
         </article>
       `;
@@ -182,7 +185,8 @@ async function openFolder(folderId) {
       });
     });
 
-        // adiciona listeners dos botões de editar nome
+      
+    // adiciona listeners dos botões de editar nome
     grid.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const cardId = parseInt(btn.getAttribute('data-edit'), 10);
@@ -191,6 +195,7 @@ async function openFolder(folderId) {
         editCardName(cardId, fid, currentName);
       });
     });
+
 
 
   } catch (e) {
@@ -245,8 +250,9 @@ async function editCardName(cardId, folderId, currentName) {
       method: 'PATCH',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cardName: novoNome.trim() })
+      body: JSON.stringify({ pokemonName: novoNome.trim() })
     });
+
 
     if (res.status === 401) {
       location.href = '/';
@@ -266,6 +272,7 @@ async function editCardName(cardId, folderId, currentName) {
     alert('Erro ao editar nome da carta.');
   }
 }
+
 
 
 // upload / scan
