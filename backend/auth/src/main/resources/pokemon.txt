@@ -149,3 +149,4 @@ Dragonair
 Dragonite
 Mewtwo
 Mew
+Gardevoir
