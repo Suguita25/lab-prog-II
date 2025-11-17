@@ -183,9 +183,6 @@ async function openFolder(folderId) {
 
     grid.innerHTML = r.items.map(it => {
       const pokemonName = it.pokemonName || 'Desconhecido';
-      const baseName = it.cardName && it.cardName !== pokemonName
-        ? it.cardName
-        : '';
       const hasImage = !!it.imagePath;
 
       return `
@@ -199,13 +196,7 @@ async function openFolder(folderId) {
           </div>
           <div class="card-body">
             <h3 class="card-title">${pokemonName}</h3>
-            ${
-              baseName
-                ? `<div class="card-subtitle">${baseName}</div>`
-                : ''
-            }
             <div class="card-meta">
-              <span class="badge">${it.source || 'manual'}</span>
               <div class="card-actions">
                 ${
                   hasImage
@@ -216,7 +207,7 @@ async function openFolder(folderId) {
                   class="btn-icon btn-secondary"
                   data-edit="${it.id}"
                   data-folder="${folderId}"
-                  data-name="${(it.pokemonName || it.cardName || '').replace(/"/g, '&quot;')}"
+                  data-name="${(it.pokemonName || '').replace(/"/g, '&quot;')}"
                 >
                   Editar nome
                 </button>
@@ -229,6 +220,7 @@ async function openFolder(folderId) {
         </article>
       `;
     }).join('');
+
 
     // remover carta
     grid.querySelectorAll('[data-del]').forEach(btn => {

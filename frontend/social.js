@@ -169,7 +169,6 @@ async function loadFriendFolder(friendId, folderId){
 
   grid.innerHTML = items.map(it => {
     const pokemonName = it.pokemonName || 'Desconhecido';
-    const baseName = (it.cardName && it.cardName !== pokemonName) ? it.cardName : '';
     const hasImage = !!it.imagePath;
 
     return `
@@ -183,13 +182,13 @@ async function loadFriendFolder(friendId, folderId){
         </div>
         <div class="friend-card-body">
           <div class="friend-card-title">${escapeHtml(pokemonName)}</div>
-          ${ baseName ? `<div class="friend-card-sub">${escapeHtml(baseName)}</div>` : '' }
           ${ hasImage ? `<a href="${it.imagePath}" target="_blank" class="link">Abrir imagem</a>` : '' }
         </div>
       </article>
     `;
   }).join('');
 }
+
 
 
 /* ---------------- chat/polling ---------------- */
