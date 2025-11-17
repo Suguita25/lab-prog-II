@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/authdb
     username: postgres
-    password: postgres
+    password: capenga
   jpa:
     hibernate:
       ddl-auto: update
