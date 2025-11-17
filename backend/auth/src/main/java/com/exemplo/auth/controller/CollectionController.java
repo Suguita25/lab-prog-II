@@ -77,8 +77,12 @@ public class CollectionController {
     @PostMapping("/folders")
     public ResponseEntity<?> createFolder(@RequestBody @Valid CreateFolderRequest req, HttpSession session) {
         Long uid = currentUserId(session);
-        CollectionFolder f = service.createFolder(uid, req.name());
-        return ResponseEntity.ok(Map.of("id", f.getId(), "name", f.getName()));
+        try {
+            CollectionFolder f = service.createFolder(uid, req.name());
+            return ResponseEntity.ok(Map.of("id", f.getId(), "name", f.getName()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/folders")
@@ -124,47 +128,34 @@ public class CollectionController {
     }
 
     @PostMapping(value = "/cards/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CardItem scan(@RequestParam Long folderId,
-                         @RequestParam("file") MultipartFile file,
-                         HttpSession session) throws Exception {
+    public CardItem scan(@RequestParam(value = "folderId", required = false) Long folderId,
+                        @RequestParam(value = "folderName", required = false) String folderName,
+                        @RequestParam("file") MultipartFile file,
+                        HttpSession session) throws Exception {
         Long uid = currentUserId(session);
 
-        // salva arquivo temporário
+        // se não veio ID, tenta resolver pelo nome da pasta
+        if (folderId == null) {
+            String name = folderName == null ? "" : folderName.trim();
+            if (name.isEmpty()) {
+                throw new IllegalArgumentException("folderId or folderName is required");
+            }
+
+            var folderOpt = folderRepo.findByUserIdAndName(uid, name);
+            var folder = folderOpt.orElseThrow(() -> new IllegalArgumentException("folder not found"));
+            folderId = folder.getId();
+        }
+
+        // salva arquivo temporário e chama o OCR
         File tmp = File.createTempFile(
                 "card_",
                 "_" + (file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename())
         );
         file.transferTo(tmp);
-
-        // pasta física: data/users/{uid}/images
-        Path storage = Paths.get("data", "users", String.valueOf(uid), "images");
-
+        Path storage = Path.of("data", "users", String.valueOf(uid), "images");
         return service.scanAndAdd(uid, folderId, tmp, storage);
     }
 
-    /*
-    // adiciona carta com nome + imagem (opcional)
-    @PostMapping(value = "/cards", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public CardItem addCard(
-            @RequestParam Long folderId,
-            @RequestParam String cardName,
-            @RequestParam(value = "file", required = false) MultipartFile file,
-            HttpSession session
-    ) throws Exception {
-        Long uid = currentUserId(session);
-        if (file != null && !file.isEmpty()) {
-            File tmp = File.createTempFile(
-                    "card_",
-                    "_" + (file.getOriginalFilename() == null ? "upload" : file.getOriginalFilename())
-            );
-            file.transferTo(tmp);
-            Path storage = Paths.get("data", "users", String.valueOf(uid), "images");
-            return service.addWithOptionalImage(uid, folderId, cardName, tmp, storage);
-        } else {
-            return service.addManual(uid, folderId, cardName);
-        }
-    }
-    */
 
     // renomear pasta
     @PatchMapping("/folders/{id}")

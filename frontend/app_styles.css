@@ -209,6 +209,18 @@ input[type="file"]:focus {
   font-weight:600;
 }
 
+.folder-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.folder-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+
 /* fields */
 
 .field {

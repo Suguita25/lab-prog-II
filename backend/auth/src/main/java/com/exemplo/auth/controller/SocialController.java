@@ -1,11 +1,17 @@
 package com.exemplo.auth.controller;
 
+import com.exemplo.auth.dto.FriendView;
+import com.exemplo.auth.model.CardItem;
+import com.exemplo.auth.model.CollectionFolder;
 import com.exemplo.auth.model.DirectMessage;
 import com.exemplo.auth.model.Friendship;
 import com.exemplo.auth.model.Friendship.Status;
+import com.exemplo.auth.repository.CardItemRepository;
+import com.exemplo.auth.repository.CollectionFolderRepository;
 import com.exemplo.auth.repository.UserRepository;
 import com.exemplo.auth.service.SocialService;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,10 +31,17 @@ public class SocialController {
 
     private final SocialService social;
     private final UserRepository users;
+    private final CollectionFolderRepository folders;
+    private final CardItemRepository cards;
 
-    public SocialController(SocialService social, UserRepository users) {
+    public SocialController(SocialService social,
+                            UserRepository users,
+                            CollectionFolderRepository folders,
+                            CardItemRepository cards) {
         this.social = social;
         this.users = users;
+        this.folders = folders;
+        this.cards = cards;
     }
 
     /* --------------------- util sessão --------------------- */
@@ -44,8 +57,14 @@ public class SocialController {
     static class Unauthorized extends RuntimeException {}
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String,String>> onBadRequest(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    public ResponseEntity<Map<String,String>> handleIllegalArg(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String,String>> handleUnique() {
+        return ResponseEntity.status(409)
+                .body(Map.of("error", "Solicitação já existe para esse par de usuários."));
     }
 
     /* ----------------------- amigos ------------------------ */
@@ -55,7 +74,6 @@ public class SocialController {
         Long uid = currentUserId(session);
         String toEmail = body.getOrDefault("email", "");
         Friendship f = social.requestFriend(uid, toEmail);
-        // 200 se já existia, 201 se foi criado agora — aqui retornamos 200 para simplificar
         return ResponseEntity.ok(f);
     }
 
@@ -65,10 +83,11 @@ public class SocialController {
         return ResponseEntity.ok(social.myPending(currentUserId(session)));
     }
 
-    /** Lista de amigos (status ACCEPTED) em qualquer direção. */
+    /** Lista de amigos (status ACCEPTED) em qualquer direção, com username/email. */
     @GetMapping("/friends")
-    public ResponseEntity<List<Friendship>> friends(HttpSession session) {
-        return ResponseEntity.ok(social.myFriends(currentUserId(session)));
+    public ResponseEntity<List<FriendView>> friends(HttpSession session) {
+        Long uid = currentUserId(session);
+        return ResponseEntity.ok(social.myFriendViews(uid));
     }
 
     @PatchMapping("/friends/{id}/accept")
@@ -83,6 +102,42 @@ public class SocialController {
         return ResponseEntity.ok(f);
     }
 
+    /* --------- visualizar coleções do amigo (somente leitura) --------- */
+
+    /** Lista de pastas do amigo (somente se forem amigos). */
+    @GetMapping("/friends/{friendId}/folders")
+    public ResponseEntity<List<CollectionFolder>> friendFolders(@PathVariable Long friendId,
+                                                                HttpSession session) {
+        Long me = currentUserId(session);
+        if (!social.isFriends(me, friendId)) {
+            throw new IllegalArgumentException("vocês não são amigos");
+        }
+        List<CollectionFolder> list = folders.findByUserId(friendId);
+        return ResponseEntity.ok(list);
+    }
+
+    /** Conteúdo de uma pasta do amigo (somente leitura). */
+    @GetMapping("/friends/{friendId}/folders/{folderId}")
+    public ResponseEntity<Map<String, Object>> friendFolderDetail(@PathVariable Long friendId,
+                                                                  @PathVariable Long folderId,
+                                                                  HttpSession session) {
+        Long me = currentUserId(session);
+        if (!social.isFriends(me, friendId)) {
+            throw new IllegalArgumentException("vocês não são amigos");
+        }
+
+        CollectionFolder f = folders.findByIdAndUserId(folderId, friendId)
+                .orElseThrow(() -> new IllegalArgumentException("pasta não encontrada"));
+
+        List<CardItem> items = cards.findByFolderIdAndUserId(folderId, friendId);
+
+        return ResponseEntity.ok(Map.of(
+                "id", f.getId(),
+                "name", f.getName(),
+                "items", items
+        ));
+    }
+
     /* ---------------------- mensagens ---------------------- */
 
     @GetMapping("/messages")
@@ -95,7 +150,7 @@ public class SocialController {
                 Instant t = Instant.parse(since);
                 return ResponseEntity.ok(social.since(me, withUserId, t));
             } catch (DateTimeParseException e) {
-                throw new IllegalArgumentException(" parâmetro 'since' inválido; use ISO-8601, ex: 2025-11-05T02:10:00Z ");
+                throw new IllegalArgumentException("parâmetro 'since' inválido; use ISO-8601, ex: 2025-11-05T02:10:00Z");
             }
         }
         return ResponseEntity.ok(social.history(me, withUserId));
@@ -119,22 +174,10 @@ public class SocialController {
             DirectMessage dm = social.sendMessage(me, toUserId, text, tmp, storage);
             return ResponseEntity.status(HttpStatus.CREATED).body(dm);
         } finally {
-            // sempre limpar o arquivo temporário, se criado
             if (tmp != null && tmp.exists()) {
                 //noinspection ResultOfMethodCallIgnored
                 tmp.delete();
             }
         }
     }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-public ResponseEntity<Map<String,String>> handleIllegalArg(IllegalArgumentException e) {
-    return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-}
-
-@ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
-public ResponseEntity<Map<String,String>> handleUnique() {
-    return ResponseEntity.status(409).body(Map.of("error", "Solicitação já existe para esse par de usuários."));
-}
-
 }

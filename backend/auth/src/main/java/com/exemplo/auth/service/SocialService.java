@@ -18,6 +18,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
+import com.exemplo.auth.dto.FriendView;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 
 @Service
 public class SocialService {
@@ -91,6 +99,45 @@ public Friendship requestFriend(Long requesterId, String email) {
         // return friends.findByRequesterIdOrAddresseeIdAndStatus(userId, userId, Status.ACCEPTED);
         return friends.findFriendsOf(userId);
         //return friends.findAllOfUserWithStatus(userId, Status.ACCEPTED);
+    }
+
+        /** Lista de amigos com dados do outro usuário (id + username + email). */
+    @Transactional(readOnly = true)
+    public List<FriendView> myFriendViews(Long userId) {
+        // amizades ACCEPTED que envolvem o usuário
+        List<Friendship> fs = friends.findFriendsOf(userId);
+        if (fs.isEmpty()) return List.of();
+
+        // pega todos os IDs dos "outros" usuários
+        Set<Long> otherIds = new HashSet<>();
+        for (Friendship f : fs) {
+            Long other = f.otherOf(userId);
+            if (other != null) {
+                otherIds.add(other);
+            }
+        }
+        if (otherIds.isEmpty()) return List.of();
+
+        // carrega todos os usuários em um único select
+        Map<Long, User> userMap = users.findAllById(otherIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        // monta a lista de FriendView
+        List<FriendView> views = new ArrayList<>();
+        for (Friendship f : fs) {
+            Long other = f.otherOf(userId);
+            if (other == null) continue;
+            User u = userMap.get(other);
+            if (u == null) continue;
+
+            views.add(new FriendView(
+                    f.getId(),       // friendshipId
+                    other,           // userId do amigo
+                    u.getUsername(), // username
+                    u.getEmail()     // email (fallback se precisar)
+            ));
+        }
+        return views;
     }
 
     /** Verifica se dois usuários são amigos (ACCEPTED) em qualquer direção. */

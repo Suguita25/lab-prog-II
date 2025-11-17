@@ -9,4 +9,5 @@ public interface CollectionFolderRepository extends JpaRepository<CollectionFold
     List<CollectionFolder> findByUserId(Long userId);
     Optional<CollectionFolder> findByIdAndUserId(Long id, Long userId);
     boolean existsByUserIdAndName(Long userId, String name);
+    Optional<CollectionFolder> findByUserIdAndName(Long userId, String name);
 }

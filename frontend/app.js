@@ -3,6 +3,8 @@ const out = document.getElementById('output');
 const meEmail = document.getElementById('meEmail');
 const bar = document.getElementById('bar');
 
+let currentFolderId = null;
+
 function setOut(obj) {
   if (!out) return;
   out.textContent = typeof obj === 'string'
@@ -61,18 +63,32 @@ async function loadFolders() {
     folders.forEach(f => {
       const li = document.createElement('li');
       li.innerHTML = `
-        <div>
-          <strong>#${f.id}</strong> — ${f.name}
+        <div class="folder-name">
+          ${f.name}
         </div>
-        <button class="btn btn-ghost btn-xs" data-open="${f.id}">Abrir</button>
+        <div class="folder-actions">
+          <button class="btn btn-ghost btn-xs" data-open="${f.id}">Abrir</button>
+          <button class="btn-icon btn-danger" data-del-folder="${f.id}">
+            Remover
+          </button>
+        </div>
       `;
       list.appendChild(li);
     });
 
+    // abrir pasta
     list.querySelectorAll('[data-open]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = parseInt(btn.getAttribute('data-open'), 10);
         openFolder(id);
+      });
+    });
+
+    // remover pasta
+    list.querySelectorAll('[data-del-folder]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = parseInt(btn.getAttribute('data-del-folder'), 10);
+        deleteFolder(id);
       });
     });
 
@@ -97,6 +113,45 @@ async function createFolder() {
   await loadFolders();
 }
 
+// remover pasta
+async function deleteFolder(folderId) {
+  if (!confirm('Deseja realmente remover esta pasta? Todas as cartas dela serão apagadas.')) {
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/collections/folders/${folderId}`, {
+      method: 'DELETE',
+      credentials: 'same-origin'
+    });
+
+    if (res.status === 401) {
+      location.href = '/';
+      return;
+    }
+
+    if (!res.ok) {
+      alert('Erro ao remover pasta.');
+      return;
+    }
+
+    // se a pasta removida era a que estava aberta, limpa a área de cards
+    if (currentFolderId === folderId) {
+      currentFolderId = null;
+      const head = document.getElementById('folderHeader');
+      const grid = document.getElementById('cardsGrid');
+      if (head) head.textContent = 'Selecione uma pasta para visualizar.';
+      if (grid) grid.innerHTML = '';
+    }
+
+    setOut({ deletedFolderId: folderId });
+    await loadFolders();
+  } catch (e) {
+    console.error(e);
+    alert('Erro ao remover pasta.');
+  }
+}
+
 // ---- cards / conteúdo da pasta ----
 
 async function openFolder(folderId) {
@@ -104,16 +159,19 @@ async function openFolder(folderId) {
     const r = await getJson(`/api/collections/folders/${folderId}`);
     if (!r) return;
 
+    currentFolderId = folderId;
     setOut(r);
 
     const head = document.getElementById('folderHeader');
     if (head) {
-      head.textContent = `Pasta #${r.id} — ${r.name}`;
+      // não mostramos mais o ID numérico, só o nome
+      head.textContent = `Pasta — ${r.name}`;
     }
 
-    // preencher ID do scanner
-    const inpScan = document.getElementById('folderIdScan');
-    if (inpScan) inpScan.value = folderId;
+    // preencher NOME da pasta no scanner (apenas visual)
+    const inpScan = document.getElementById('folderNameScan');
+    if (inpScan) inpScan.value = r.name || '';
+
 
     const grid = document.getElementById('cardsGrid');
     if (!grid) return;
@@ -123,7 +181,6 @@ async function openFolder(folderId) {
       return;
     }
 
-    // monta cards com botão de remover
     grid.innerHTML = r.items.map(it => {
       const pokemonName = it.pokemonName || 'Desconhecido';
       const baseName = it.cardName && it.cardName !== pokemonName
@@ -148,35 +205,32 @@ async function openFolder(folderId) {
                 : ''
             }
             <div class="card-meta">
-            <span class="badge">${it.source || 'manual'}</span>
-            <div class="card-actions">
-              ${
-                hasImage
-                  ? `<a href="${it.imagePath}" target="_blank" class="link">Abrir imagem</a>`
-                  : ''
-              }
-              <button
-                class="btn-icon btn-secondary"
-                data-edit="${it.id}"
-                data-folder="${folderId}"
-                data-name="${(it.pokemonName || it.cardName || '').replace(/"/g, '&quot;')}"
-
-              >
-                Editar nome
-              </button>
-
-              <button class="btn-icon btn-danger" data-del="${it.id}" data-folder="${folderId}">
-                Remover
-              </button>
+              <span class="badge">${it.source || 'manual'}</span>
+              <div class="card-actions">
+                ${
+                  hasImage
+                    ? `<a href="${it.imagePath}" target="_blank" class="link">Abrir imagem</a>`
+                    : ''
+                }
+                <button
+                  class="btn-icon btn-secondary"
+                  data-edit="${it.id}"
+                  data-folder="${folderId}"
+                  data-name="${(it.pokemonName || it.cardName || '').replace(/"/g, '&quot;')}"
+                >
+                  Editar nome
+                </button>
+                <button class="btn-icon btn-danger" data-del="${it.id}" data-folder="${folderId}">
+                  Remover
+                </button>
+              </div>
             </div>
-          </div>
-
           </div>
         </article>
       `;
     }).join('');
 
-    // listeners de remover
+    // remover carta
     grid.querySelectorAll('[data-del]').forEach(btn => {
       btn.addEventListener('click', () => {
         const cardId = parseInt(btn.getAttribute('data-del'), 10);
@@ -185,8 +239,7 @@ async function openFolder(folderId) {
       });
     });
 
-      
-    // adiciona listeners dos botões de editar nome
+    // editar nome da carta
     grid.querySelectorAll('[data-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const cardId = parseInt(btn.getAttribute('data-edit'), 10);
@@ -196,16 +249,13 @@ async function openFolder(folderId) {
       });
     });
 
-
-
   } catch (e) {
     console.error(e);
     alert('Erro ao carregar pasta.');
   }
 }
 
-// ---- remover carta ----
-
+// remover carta
 async function deleteCard(cardId, folderId) {
   if (!confirm('Tem certeza que deseja remover esta carta da pasta?')) {
     return;
@@ -236,7 +286,7 @@ async function deleteCard(cardId, folderId) {
   }
 }
 
-// editar nome da carta
+// editar nome da carta (pokemonName)
 async function editCardName(cardId, folderId, currentName) {
   const novoNome = prompt('Novo nome da carta:', currentName || '');
   if (novoNome === null) return;        // cancelou
@@ -253,7 +303,6 @@ async function editCardName(cardId, folderId, currentName) {
       body: JSON.stringify({ pokemonName: novoNome.trim() })
     });
 
-
     if (res.status === 401) {
       location.href = '/';
       return;
@@ -266,27 +315,30 @@ async function editCardName(cardId, folderId, currentName) {
 
     const json = await res.json();
     setOut(json);
-    await openFolder(folderId); // recarrega a pasta pra refletir o novo nome
+    await openFolder(folderId); // recarrega a pasta
   } catch (e) {
     console.error(e);
     alert('Erro ao editar nome da carta.');
   }
 }
 
-
-
 // upload / scan
 async function scanUpload() {
-  const folderId = parseInt(document.getElementById('folderIdScan')?.value || '0', 10);
+  const inp = document.getElementById('folderNameScan');
+  const folderName = inp ? inp.value.trim() : '';
   const fileInput = document.getElementById('scanFile');
-  if (!folderId) { alert('Informe o ID da pasta.'); return; }
+
+  if (!folderName) {
+    alert('Informe o NOME da pasta (ou abra uma pasta na lista, que o nome é preenchido automaticamente).');
+    return;
+  }
   if (!fileInput || !fileInput.files.length) {
     alert('Selecione uma imagem.');
     return;
   }
 
   const form = new FormData();
-  form.append('folderId', folderId);
+  form.append('folderName', folderName);
   form.append('file', fileInput.files[0]);
 
   const xhr = new XMLHttpRequest();
@@ -306,7 +358,11 @@ async function scanUpload() {
     try {
       const json = JSON.parse(xhr.responseText || '{}');
       setOut(json);
-      openFolder(folderId);
+
+      // se você quiser recarregar a pasta, precisa do id atual:
+      if (currentFolderId != null) {
+        openFolder(currentFolderId);
+      }
       fileInput.value = '';
     } catch (e) {
       console.error(e);
@@ -320,6 +376,7 @@ async function scanUpload() {
 
   xhr.send(form);
 }
+
 
 // logout
 async function doLogout() {

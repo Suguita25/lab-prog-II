@@ -38,12 +38,23 @@ public class CollectionService {
     /* ==================== Pastas ==================== */
 
     public CollectionFolder createFolder(Long userId, String name) {
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("folder name required");
+        }
+
+        // verifica se já existe pasta com esse nome para esse usuário
+        folderRepo.findByUserIdAndName(userId, trimmed).ifPresent(existing -> {
+            throw new IllegalArgumentException("folder name already exists for this user");
+        });
+
         CollectionFolder f = new CollectionFolder();
         f.setUserId(userId);
-        f.setName(name);
+        f.setName(trimmed);
         f.setCreatedAt(Instant.now());
         return folderRepo.save(f);
     }
+
 
     public List<CollectionFolder> listFolders(Long userId) {
         return folderRepo.findByUserId(userId);
@@ -238,9 +249,6 @@ public CardItem renameCard(Long userId, Long cardId, String newName) {
 
     return itemRepo.save(it);
 }
-
-
-
 
 
     /* ==================== Helpers ==================== */
