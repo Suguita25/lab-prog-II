@@ -10,14 +10,31 @@
 <div class="wrap">
   <div class="card-shell">
     <!-- Cabeçalho -->
-    <header class="header">
+    <header class="app-header-main">
       <div>
         <h1>Minha Coleção</h1>
-        <div class="muted">
-          Bem-vindo, <span id="meEmail" class="pill">...</span>
-        </div>
+        <p>Bem-vindo, <span id="userEmail"></span></p>
       </div>
-      <button id="logoutBtn" class="btn btn-ghost">Sair</button>
+
+        <a href="/social.html" class="pill" style="text-decoration:none; background:#e0e7ff;">
+            Rede social
+        </a>
+
+      <div class="header-right">
+        <div class="profile-box">
+          <div class="avatar" id="avatarCircle">
+            <span id="avatarInitial">?</span>
+            <img id="avatarImg" alt="Foto de perfil" style="display:none;">
+          </div>
+          <label class="avatar-upload">
+            <input type="file" id="avatarFile" accept="image/*" hidden>
+            Trocar foto
+          </label>
+        </div>
+
+        <!-- 🔹 botão de sair de volta -->
+        <button id="btnLogout" class="btn-logout">Sair</button>
+      </div>
     </header>
 
     <div class="layout">
@@ -89,9 +106,7 @@
         </div>
 
         <div class="footer-row">
-          <a href="/social.html" class="pill" style="text-decoration:none; background:#e0e7ff;">
-            Rede social
-          </a>
+
           <span class="muted" style="font-size:12px;">Debug da API:</span>
         </div>
         <pre id="output">{}</pre>

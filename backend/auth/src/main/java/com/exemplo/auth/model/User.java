@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+
 @Entity
 @Table(name = "users", uniqueConstraints = {
         @UniqueConstraint(name="uk_users_email", columnNames = "email"),
@@ -23,8 +24,12 @@ public class User {
     private String email;
 
     @NotBlank
-    @Column(nullable = false, length = 60) // hash bcrypt ~60 chars
+    @Column(nullable = false, length = 60)
     private String passwordHash;
+
+    // 🔹 NOVO: caminho da foto de perfil (URL tipo /files/users/1/avatar/avatar.png)
+    @Column(name = "profile_image_path", length = 255)
+    private String profileImagePath;
 
     // getters e setters
 
@@ -39,5 +44,9 @@ public class User {
 
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+
+    public String getProfileImagePath() { return profileImagePath; }
+    public void setProfileImagePath(String profileImagePath) { this.profileImagePath = profileImagePath; }
 }
+
 

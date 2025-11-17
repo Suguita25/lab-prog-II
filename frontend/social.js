@@ -77,27 +77,38 @@ function setChat(messages) {
 
 /* ---------------- listas ---------------- */
 async function loadPending(){
-  await loadMe();
   const arr = await getJson('/api/social/friends/pending') || [];
   const ul = document.getElementById('pending');
-  ul.innerHTML = arr.length ? arr.map(f => `
-    <li>
-      <span>De: ${f.requesterId} → Você</span>
-      <span>
-        <button data-accept="${f.id}">Aceitar</button>
-        <button data-decline="${f.id}">Recusar</button>
-      </span>
-    </li>`).join('') : '<li class="muted">Nada pendente</li>';
 
-  ul.querySelectorAll('[data-accept]').forEach(b=>b.onclick=async ()=>{
+  if (!Array.isArray(arr) || arr.length === 0) {
+    ul.innerHTML = '<li class="muted">Nada pendente</li>';
+    return;
+  }
+
+  ul.innerHTML = arr.map(f => {
+    const name = f.requesterUsername || f.requesterEmail || (`Usuário ${f.requesterId}`);
+    return `
+      <li>
+        <span>De: ${escapeHtml(name)} → Você</span>
+        <span>
+          <button data-accept="${f.friendshipId}">Aceitar</button>
+          <button data-decline="${f.friendshipId}">Recusar</button>
+        </span>
+      </li>
+    `;
+  }).join('');
+
+  ul.querySelectorAll('[data-accept]').forEach(b => b.onclick = async () => {
     const ok = await patch(`/api/social/friends/${b.dataset.accept}/accept`);
     if (ok) { loadPending(); loadFriends(); }
   });
-  ul.querySelectorAll('[data-decline]').forEach(b=>b.onclick=async ()=>{
+
+  ul.querySelectorAll('[data-decline]').forEach(b => b.onclick = async () => {
     const ok = await patch(`/api/social/friends/${b.dataset.decline}/decline`);
     if (ok) loadPending();
   });
 }
+
 
 async function loadFriends(){
   const arr = await getJson('/api/social/friends') || [];
@@ -109,19 +120,67 @@ async function loadFriends(){
   }
 
   ul.innerHTML = arr.map(f => {
-    const display = f.username || f.email || (`Usuário ${f.userId}`);
+    const name = f.friendUsername || f.friendEmail || ('Usuário ' + f.friendId);
+    const avatarUrl = f.friendAvatarUrl || '';
+    const initial = (name && name[0]) ? name[0].toUpperCase() : '?';
+
+    const avatarHtml = avatarUrl
+      ? `<img class="friend-avatar-img" src="${avatarUrl}" alt="${escapeHtml(name)}">`
+      : `<div class="friend-avatar-placeholder">${escapeHtml(initial)}</div>`;
+
     return `
-      <li>
-        <span>${escapeHtml(display)}</span>
-        <button data-open="${f.userId}">Conversar/Ver pastas</button>
+      <li class="friend-item">
+        <div class="friend-avatar">
+          ${avatarHtml}
+        </div>
+        <span class="friend-name">${escapeHtml(name)}</span>
+        <div class="friend-actions">
+          <button class="btn-secondary" data-open="${f.friendId}">Conversar</button>
+          <button class="btn-danger" data-remove="${f.friendshipId}">Remover</button>
+        </div>
       </li>
     `;
   }).join('');
 
-  ul.querySelectorAll('[data-open]').forEach(b => {
-    b.onclick = () => openChat(Number(b.dataset.open));
-  });
+  // abrir chat
+  ul.querySelectorAll('[data-open]').forEach(b =>
+    b.onclick = () => openChat(Number(b.dataset.open))
+  );
+
+  // remover amigo
+  ul.querySelectorAll('[data-remove]').forEach(b =>
+    b.onclick = async () => {
+      const friendshipId = b.dataset.remove;
+      if (!confirm('Tem certeza que deseja remover este amigo?')) return;
+
+      const r = await fetch(`/api/social/friends/${friendshipId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+
+      if (r.status === 401) {
+        location.href = '/';
+        return;
+      }
+
+      if (!r.ok) {
+        const txt = await r.text();
+        try {
+          const err = JSON.parse(txt);
+          alert(err.error || 'Falha ao remover amigo.');
+        } catch {
+          alert('Falha ao remover amigo.');
+        }
+        return;
+      }
+
+      // recarrega lista de amigos após remover
+      loadFriends();
+    }
+  );
 }
+
+
 
 async function loadFriendFolders(friendId){
   const ul = document.getElementById('friendFolders');
@@ -239,21 +298,28 @@ document.getElementById('btnRequest').onclick = async () => {
 };
 
 document.getElementById('btnSend').onclick = async () => {
-  if (!currentFriendId) { alert('Escolha um amigo primeiro.'); return; }
-  const text = document.getElementById('msgText').value;
-  const file = document.getElementById('msgFile').files[0];
+  if (!currentFriendId) {
+    alert('Escolha um amigo primeiro.');
+    return;
+  }
+
+  const textInput = document.getElementById('msgText');
+  const text = (textInput.value || '').trim();
+  if (!text) {
+    alert('Digite uma mensagem.');
+    return;
+  }
 
   const fd = new FormData();
   fd.append('toUserId', currentFriendId);
-  if (text) fd.append('text', text);
-  if (file) fd.append('file', file);
+  fd.append('text', text);
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST','/api/social/messages', true);
   xhr.withCredentials = true;
   xhr.onload = () => {
-    if (xhr.status===201 || xhr.status===200){
-      try{
+    if (xhr.status === 201 || xhr.status === 200) {
+      try {
         const msg = JSON.parse(xhr.responseText);
         if (!seenIds.has(msg.id)) {
           seenIds.add(msg.id);
@@ -261,15 +327,14 @@ document.getElementById('btnSend').onclick = async () => {
           if (!lastIso || msg.createdAt > lastIso) lastIso = msg.createdAt;
           setChat(chatMsgs);
         }
-      } catch(e){
+      } catch(e) {
         console.error('JSON inválido no envio', e, xhr.responseText);
       }
-      document.getElementById('msgText').value='';
-      document.getElementById('msgFile').value='';
-    } else if (xhr.status===401){
-      location.href='/';
+      textInput.value = '';
+    } else if (xhr.status === 401) {
+      location.href = '/';
     } else {
-      try{
+      try {
         const err = JSON.parse(xhr.responseText);
         alert(err.error || 'Falha ao enviar');
       } catch {
@@ -280,6 +345,7 @@ document.getElementById('btnSend').onclick = async () => {
   xhr.onerror = () => alert('Erro de rede ao enviar.');
   xhr.send(fd);
 };
+
 
 /* ---------------- boot ---------------- */
 (async function boot(){

@@ -9,6 +9,7 @@ import com.exemplo.auth.repository.FriendshipRepository;
 import com.exemplo.auth.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.exemplo.auth.dto.PendingFriendView;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -92,53 +93,94 @@ public Friendship requestFriend(Long requesterId, String email) {
         return friends.findByAddresseeIdAndStatus(userId, Status.PENDING);
     }
 
-    /** Relações ACCEPTED envolvendo o usuário em qualquer direção. */
+    /** Solicitações pendentes (onde EU sou o destinatário) com dados do remetente. */
     @Transactional(readOnly = true)
-    public List<Friendship> myFriends(Long userId) {
-        // Se você manteve os métodos antigos, substitua por:
-        // return friends.findByRequesterIdOrAddresseeIdAndStatus(userId, userId, Status.ACCEPTED);
-        return friends.findFriendsOf(userId);
-        //return friends.findAllOfUserWithStatus(userId, Status.ACCEPTED);
-    }
+    public List<PendingFriendView> myPendingViews(Long userId) {
+        List<Friendship> list = friends.findByAddresseeIdAndStatus(userId, Status.PENDING);
+        if (list.isEmpty()) return List.of();
 
-        /** Lista de amigos com dados do outro usuário (id + username + email). */
-    @Transactional(readOnly = true)
-    public List<FriendView> myFriendViews(Long userId) {
-        // amizades ACCEPTED que envolvem o usuário
-        List<Friendship> fs = friends.findFriendsOf(userId);
-        if (fs.isEmpty()) return List.of();
-
-        // pega todos os IDs dos "outros" usuários
-        Set<Long> otherIds = new HashSet<>();
-        for (Friendship f : fs) {
-            Long other = f.otherOf(userId);
-            if (other != null) {
-                otherIds.add(other);
-            }
+        // pega todos os requesterIds
+        Set<Long> requesterIds = new HashSet<>();
+        for (Friendship f : list) {
+            requesterIds.add(f.getRequesterId());
         }
-        if (otherIds.isEmpty()) return List.of();
 
-        // carrega todos os usuários em um único select
-        Map<Long, User> userMap = users.findAllById(otherIds).stream()
+        Map<Long, User> userMap = users.findAllById(requesterIds).stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
-        // monta a lista de FriendView
-        List<FriendView> views = new ArrayList<>();
-        for (Friendship f : fs) {
-            Long other = f.otherOf(userId);
-            if (other == null) continue;
-            User u = userMap.get(other);
-            if (u == null) continue;
+        List<PendingFriendView> out = new ArrayList<>();
+        for (Friendship f : list) {
+            User u = userMap.get(f.getRequesterId());
+            if (u == null) continue; // em caso de usuário apagado
 
-            views.add(new FriendView(
-                    f.getId(),       // friendshipId
-                    other,           // userId do amigo
-                    u.getUsername(), // username
-                    u.getEmail()     // email (fallback se precisar)
+            out.add(new PendingFriendView(
+                    f.getId(),          // friendshipId
+                    u.getId(),          // requesterId
+                    u.getUsername(),    // requesterUsername
+                    u.getEmail()        // requesterEmail
             ));
         }
-        return views;
+        return out;
     }
+
+
+     /** Relações ACCEPTED envolvendo o usuário em qualquer direção. */
+    @Transactional(readOnly = true)
+    public List<Friendship> myFriends(Long userId) {
+        return friends.findFriendsOf(userId);
+    }
+
+    /** Versão com dados do “outro” usuário (username, email, avatar). */
+    @Transactional(readOnly = true)
+    public List<FriendView> myFriendViews(Long userId) {
+        List<Friendship> rels = myFriends(userId);
+        if (rels.isEmpty()) return List.of();
+
+        Set<Long> others = new HashSet<>();
+        for (Friendship f : rels) {
+            Long other = f.otherOf(userId);
+            if (other != null) others.add(other);
+        }
+
+        Map<Long, User> userMap = users.findAllById(others).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        List<FriendView> out = new ArrayList<>();
+        for (Friendship f : rels) {
+            Long otherId = f.otherOf(userId);
+            if (otherId == null) continue;
+            User u = userMap.get(otherId);
+            if (u == null) continue;
+
+            out.add(new FriendView(
+                    f.getId(),
+                    u.getId(),
+                    u.getUsername(),
+                    u.getEmail(),
+                    u.getProfileImagePath()
+            ));
+        }
+        return out;
+    }
+
+    @Transactional
+    public void removeFriendship(Long actorId, Long friendshipId) {
+        Friendship f = friends.findById(friendshipId)
+                .orElseThrow(() -> new IllegalArgumentException("amizade não encontrada"));
+
+        boolean isParticipant =
+                Objects.equals(actorId, f.getRequesterId()) ||
+                Objects.equals(actorId, f.getAddresseeId());
+
+        if (!isParticipant) {
+            throw new IllegalArgumentException("sem permissão para remover esta amizade");
+        }
+
+        friends.delete(f);
+    }
+
+
+
 
     /** Verifica se dois usuários são amigos (ACCEPTED) em qualquer direção. */
     @Transactional(readOnly = true)

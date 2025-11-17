@@ -43,6 +43,40 @@ async function ensureAuth() {
   }
 }
 
+
+async function ensureAuth() {
+  const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+  if (res.status === 401) { location.href = '/'; return null; }
+  const me = await res.json();
+  window.meId = me?.id;
+  const span = document.getElementById('userEmail');
+  if (span) span.textContent = me.email || me.username || '';
+
+  applyAvatar(me);
+  return me;
+}
+
+function applyAvatar(me) {
+  const img = document.getElementById('avatarImg');
+  const initialSpan = document.getElementById('avatarInitial');
+  if (!img || !initialSpan) return;
+
+  const url = me.profileImagePath;
+  if (url) {
+    img.src = url;
+    img.style.display = 'block';
+    initialSpan.style.display = 'none';
+  } else {
+    const base = (me.username || me.email || '?').trim();
+    const initial = base ? base[0].toUpperCase() : '?';
+    initialSpan.textContent = initial;
+    initialSpan.style.display = 'block';
+    img.style.display = 'none';
+  }
+}
+
+
+
 // ---- pastas ----
 
 async function loadFolders() {
@@ -370,19 +404,57 @@ async function scanUpload() {
 }
 
 
-// logout
-async function doLogout() {
-  try {
-    await fetch('/api/auth/logout', {
+const avatarInput = document.getElementById('avatarFile');
+if (avatarInput) {
+  avatarInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    const r = await fetch('/api/profile/avatar', {
       method: 'POST',
+      body: fd,
       credentials: 'same-origin'
     });
-  } catch (e) {
-    console.error(e);
-  } finally {
-    location.href = '/';
-  }
+
+    if (r.status === 401) {
+      location.href = '/';
+      return;
+    }
+
+    const txt = await r.text();
+    let json;
+    try { json = JSON.parse(txt); } catch { json = { raw: txt }; }
+
+    if (!r.ok) {
+      alert(json.error || 'Falha ao enviar foto de perfil.');
+      return;
+    }
+
+    const url = json.avatarUrl;
+    const img = document.getElementById('avatarImg');
+    const initialSpan = document.getElementById('avatarInitial');
+    if (img && initialSpan && url) {
+      img.src = url + '?v=' + Date.now(); // bust cache
+      img.style.display = 'block';
+      initialSpan.style.display = 'none';
+    }
+  });
 }
+
+
+
+// logout
+const btnLogout = document.getElementById('btnLogout');
+if (btnLogout) {
+  btnLogout.onclick = async () => {
+    await fetch('/api/auth/logout', { method:'POST', credentials:'same-origin' });
+    location.href = '/';
+  };
+}
+
 
 // ---- listeners ----
 document.getElementById('btnReloadFolders')?.addEventListener('click', loadFolders);

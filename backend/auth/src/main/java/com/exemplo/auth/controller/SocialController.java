@@ -17,6 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import com.exemplo.auth.dto.PendingFriendView;
+
 
 import java.io.File;
 import java.nio.file.Path;
@@ -77,11 +79,13 @@ public class SocialController {
         return ResponseEntity.ok(f);
     }
 
-    /** Solicitações pendentes onde EU sou o destinatário. */
+        /** Solicitações pendentes onde EU sou o destinatário (com username do remetente). */
     @GetMapping("/friends/pending")
-    public ResponseEntity<List<Friendship>> pending(HttpSession session) {
-        return ResponseEntity.ok(social.myPending(currentUserId(session)));
+    public ResponseEntity<List<PendingFriendView>> pending(HttpSession session) {
+        Long uid = currentUserId(session);
+        return ResponseEntity.ok(social.myPendingViews(uid));
     }
+
 
     /** Lista de amigos (status ACCEPTED) em qualquer direção, com username/email. */
     @GetMapping("/friends")
@@ -89,6 +93,15 @@ public class SocialController {
         Long uid = currentUserId(session);
         return ResponseEntity.ok(social.myFriendViews(uid));
     }
+
+        // remover amizade (qualquer um dos dois participantes pode remover)
+    @DeleteMapping("/friends/{id}")
+    public ResponseEntity<Void> deleteFriend(@PathVariable Long id, HttpSession session) {
+        Long uid = currentUserId(session);
+        social.removeFriendship(uid, id);
+        return ResponseEntity.noContent().build();
+    }
+
 
     @PatchMapping("/friends/{id}/accept")
     public ResponseEntity<Friendship> accept(@PathVariable Long id, HttpSession session) {
