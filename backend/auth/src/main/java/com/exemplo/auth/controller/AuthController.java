@@ -45,6 +45,7 @@ public class AuthController {
         // cria a sessão do usuário
         session.setAttribute("auth", true);
         session.setAttribute("email", req.email());
+        // session.setAttribute("uid", userId);
         // se mais tarde você tiver o id do usuário aqui, pode fazer:
         // session.setAttribute("uid", userId);
 
