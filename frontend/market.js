@@ -109,7 +109,7 @@ function renderNotifications(list) {
     </div>
   `).join('');
 }
-
+/*
 function renderSearchResults(list) {
   const box = document.getElementById('searchResults');
   if (!box) return;
@@ -162,6 +162,76 @@ function renderSearchResults(list) {
     };
   });
 }
+  */
+
+function renderListingsInto(list, containerId) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+
+  if (!Array.isArray(list) || list.length === 0) {
+    box.innerHTML = '<p class="muted">Nenhum anúncio encontrado.</p>';
+    return;
+  }
+
+  box.innerHTML = list.map(m => `
+    <article class="market-card">
+      <div class="market-thumb">
+        ${m.imagePath ? `<img src="${m.imagePath}" alt="${escapeHtml(m.pokemonName)}">` : ''}
+      </div>
+      <div class="market-title">${escapeHtml(m.pokemonName || 'Desconhecido')}</div>
+      <div class="market-price">R$ ${Number(m.price).toFixed(2)}</div>
+      <div class="market-actions">
+        <button class="btn-outline" data-open-img="${m.imagePath || ''}">Abrir imagem</button>
+        <button class="primary" data-buy="${m.id}">Comprar</button>
+      </div>
+    </article>
+  `).join('');
+
+  // abrir imagem
+  box.querySelectorAll('[data-open-img]').forEach(b => {
+    b.onclick = () => {
+      const url = b.dataset.openImg;
+      if (url) window.open(url, '_blank');
+    };
+  });
+
+  // comprar
+  box.querySelectorAll('[data-buy]').forEach(b => {
+    b.onclick = async () => {
+      if (!confirm('Confirmar compra desta carta?')) return;
+      const id = b.dataset.buy;
+      const r = await fetch(`/api/market/listings/${id}/buy`, {
+        method: 'POST',
+        credentials: 'same-origin'
+      });
+      const txt = await r.text();
+      let json;
+      try { json = JSON.parse(txt); } catch { json = { raw: txt }; }
+
+      if (r.status === 401) { location.href = '/'; return; }
+
+      if (!r.ok) {
+        alert(json.error || 'Falha ao comprar.');
+        return;
+      }
+
+      alert('Compra realizada!');
+      // atualiza lista geral + notificações + (se estiver aberta) a busca
+      loadAllListings();
+      loadNotifications();
+      doSearch(true); // chamada "silenciosa" para atualizar resultados
+    };
+  });
+}
+
+function renderSearchResults(list) {
+  renderListingsInto(list, 'searchResults');
+}
+
+function renderAllListings(list) {
+  renderListingsInto(list, 'allListings');
+}
+
 
 async function patchListing(id, payload) {
   const r = await fetch(`/api/market/listings/${id}`, {
@@ -210,14 +280,42 @@ async function loadNotifications() {
   renderNotifications(json);
 }
 
-async function doSearch() {
-  const q = document.getElementById('searchInput').value.trim();
-  const url = '/api/market/listings/search' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+async function loadAllListings() {
+  const r = await fetch('/api/market/listings/search', { credentials: 'same-origin' });
+  if (r.status === 401) { location.href = '/'; return; }
+  const json = await r.json();
+  renderAllListings(json);
+}
+
+
+async function doSearch(fromRefresh) {
+  const input = document.getElementById('searchInput');
+  const section = document.getElementById('searchSection');
+  const label = document.getElementById('searchQueryLabel');
+
+  const q = (input ? input.value : '').trim();
+
+  // se foi chamada só para atualizar após compra, e o campo está vazio,
+  // não precisa fazer nada
+  if (!q) {
+    if (!fromRefresh && section) {
+      section.style.display = 'none';
+      const box = document.getElementById('searchResults');
+      if (box) box.innerHTML = '';
+    }
+    return;
+  }
+
+  const url = '/api/market/listings/search?q=' + encodeURIComponent(q);
   const r = await fetch(url, { credentials: 'same-origin' });
   if (r.status === 401) { location.href = '/'; return; }
   const json = await r.json();
+
+  if (label) label.textContent = q;
+  if (section) section.style.display = 'block';
   renderSearchResults(json);
 }
+
 
 /* ---- anunciar via scanner ---- */
 
@@ -269,12 +367,14 @@ async function handleSellScan() {
   if (!me) return;
 
   document.getElementById('btnSellScan').onclick = handleSellScan;
-  document.getElementById('btnSearch').onclick = doSearch;
-  document.getElementById('searchInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doSearch();
-  });
+  document.getElementById('btnSearch').onclick = () => doSearch(false);
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch(false);
+    });
+
+ 
 
   loadMyListings();
   loadNotifications();
-  doSearch(); // carrega alguns anúncios logo de cara
+  loadAllListings(); // carrega alguns anúncios logo de cara
 })();

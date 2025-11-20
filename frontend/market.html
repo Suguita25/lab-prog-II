@@ -12,7 +12,7 @@
 <header class="top-header">
   
   <div class="search-pill">
-    <span class="pill-label">Marketplace ▼</span>
+    <span class="pill-label">Marketplace</span>
     <input id="searchInput" type="text" placeholder="Procure por cartas" />
     <button id="btnSearch" class="icon-button">🔍</button>
   </div>
@@ -24,6 +24,15 @@
 </header>
 
 <main class="wrap">
+
+    <!-- RESULTADOS DA BUSCA (só aparece quando o usuário pesquisar) -->
+    <section id="searchSection" class="card section" style="display:none">
+    <h2>Resultados da busca</h2>
+    <p class="muted">
+        Resultados para: <span id="searchQueryLabel"></span>
+    </p>
+    <div id="searchResults" class="cards-grid"></div>
+    </section>
 
   <section class="card section">
     <h2>Anunciar carta para venda</h2>
@@ -54,11 +63,12 @@
     </section>
   </section>
 
-  <section class="card section">
-    <h2>Resultados da busca</h2>
-    <p class="muted">Veja as cartas que outros usuários estão vendendo.</p>
-    <div id="searchResults" class="cards-grid"></div>
-  </section>
+    <!-- TODAS AS CARTAS À VENDA -->
+    <section class="card section">
+    <h2>Cartas disponíveis</h2>
+    <p class="muted">Veja todas as cartas que outros usuários estão vendendo.</p>
+    <div id="allListings" class="cards-grid"></div>
+    </section>
 
 </main>
 
