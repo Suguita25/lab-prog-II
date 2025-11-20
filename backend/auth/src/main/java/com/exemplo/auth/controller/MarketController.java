@@ -16,6 +16,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
+
+
+
 @RestController
 @RequestMapping("/api/market")
 public class MarketController {
@@ -44,6 +49,28 @@ public class MarketController {
     public ResponseEntity<Map<String,String>> handleBad(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
     }
+
+
+        private Map<String,Object> toView(MarketListing m) {
+        var map = new LinkedHashMap<String,Object>();
+        map.put("id", m.getId());
+        map.put("sellerId", m.getSellerId());
+
+        // pega email do vendedor
+        var sellerOpt = users.findById(m.getSellerId());
+        String sellerEmail = sellerOpt.map(u -> u.getEmail()).orElse(null);
+        map.put("sellerEmail", sellerEmail);
+
+        map.put("pokemonName", m.getPokemonName());
+        map.put("cardName", m.getCardName());
+        map.put("imagePath", m.getImagePath());
+        map.put("price", m.getPrice());
+        map.put("status", m.getStatus());
+        map.put("createdAt", m.getCreatedAt());
+        map.put("soldAt", m.getSoldAt());
+        return map;
+    }
+
 
     /* ===== scanner + criação de anúncio ===== */
 
@@ -81,20 +108,29 @@ public class MarketController {
     /* ===== buscas / minha lista ===== */
 
     @GetMapping("/listings/search")
-    public List<MarketListing> search(@RequestParam(name = "q", required = false) String q) {
-        return market.searchActive(q);
+    public List<Map<String,Object>> search(@RequestParam(name = "q", required = false) String q) {
+        return market.searchActive(q)
+                .stream()
+                .map(this::toView)
+                .toList();
     }
 
     @GetMapping("/listings/mine")
-    public List<MarketListing> myListings(HttpSession session) {
+    public List<Map<String,Object>> myListings(HttpSession session) {
         Long uid = currentUserId(session);
-        return market.myActive(uid);
+        return market.myActive(uid)
+                .stream()
+                .map(this::toView)
+                .toList();
     }
 
     @GetMapping("/notifications")
-    public List<MarketListing> mySales(HttpSession session) {
+    public List<Map<String,Object>> mySales(HttpSession session) {
         Long uid = currentUserId(session);
-        return market.mySold(uid); // usado como "notificação de venda"
+        return market.mySold(uid)
+                .stream()
+                .map(this::toView)
+                .toList();
     }
 
     @PatchMapping("/listings/{id}")

@@ -173,19 +173,22 @@ function renderListingsInto(list, containerId) {
     return;
   }
 
-  box.innerHTML = list.map(m => `
-    <article class="market-card">
-      <div class="market-thumb">
-        ${m.imagePath ? `<img src="${m.imagePath}" alt="${escapeHtml(m.pokemonName)}">` : ''}
-      </div>
-      <div class="market-title">${escapeHtml(m.pokemonName || 'Desconhecido')}</div>
-      <div class="market-price">R$ ${Number(m.price).toFixed(2)}</div>
-      <div class="market-actions">
-        <button class="btn-outline" data-open-img="${m.imagePath || ''}">Abrir imagem</button>
-        <button class="primary" data-buy="${m.id}">Comprar</button>
-      </div>
-    </article>
-  `).join('');
+    box.innerHTML = list.map(m => `
+        <article class="market-card">
+        <div class="market-thumb">
+            ${m.imagePath ? `<img src="${m.imagePath}" alt="${escapeHtml(m.pokemonName)}">` : ''}
+        </div>
+        <div class="market-title">${escapeHtml(m.pokemonName || 'Desconhecido')}</div>
+        <!-- NOVO: email do vendedor -->
+
+        <div class="market-sub">Vendido por: ${escapeHtml(m.sellerEmail || '')}</div>
+        <div class="market-price">R$ ${Number(m.price).toFixed(2)}</div>
+        <div class="market-actions">
+            <button class="btn-outline" data-open-img="${m.imagePath || ''}">Abrir imagem</button>
+            <button class="primary" data-buy="${m.id}">Comprar</button>
+        </div>
+        </article>
+    `).join('');
 
   // abrir imagem
   box.querySelectorAll('[data-open-img]').forEach(b => {
