@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Market de Cartas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/header.css" />
+  <link rel="stylesheet" href="/market_styles.css" />
+</head>
+<body>
+
+<header class="top-header">
+  
+  <div class="search-pill">
+    <span class="pill-label">Marketplace ▼</span>
+    <input id="searchInput" type="text" placeholder="Procure por cartas" />
+    <button id="btnSearch" class="icon-button">🔍</button>
+  </div>
+  <nav class="top-nav">
+    <a href="/app.html">Coleção</a>
+    <a href="/social.html">Social</a>
+    <span id="userEmailMarket"></span>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <section class="card section">
+    <h2>Anunciar carta para venda</h2>
+    <p class="muted">Use o scanner para cadastrar uma carta e o valor que você deseja.</p>
+    <div class="sell-row">
+      <div class="sell-inputs">
+        <label>Imagem da carta</label>
+        <input id="sellFile" type="file" accept="image/*">
+      </div>
+      <div class="sell-inputs">
+        <label>Preço (R$)</label>
+        <input id="sellPrice" type="number" min="0" step="0.01" placeholder="ex: 29.90">
+      </div>
+      <button id="btnSellScan" class="primary">Scanner e anunciar</button>
+    </div>
+    <div id="sellDebug" class="debug-box"></div>
+  </section>
+
+  <section class="grid-2">
+    <section class="card section">
+      <h2>Minhas cartas à venda</h2>
+      <div id="myListings" class="cards-grid"></div>
+    </section>
+
+    <section class="card section">
+      <h2>Notificações de venda</h2>
+      <div id="notifications" class="notifications"></div>
+    </section>
+  </section>
+
+  <section class="card section">
+    <h2>Resultados da busca</h2>
+    <p class="muted">Veja as cartas que outros usuários estão vendendo.</p>
+    <div id="searchResults" class="cards-grid"></div>
+  </section>
+
+</main>
+
+<script src="/market.js"></script>
+</body>
+</html>

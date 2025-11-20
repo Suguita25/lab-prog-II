@@ -5,20 +5,30 @@
   <title>Minha Coleção • Pokémon</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="app_styles.css">
+  <link rel="stylesheet" href="header.css">
 </head>
 <body>
 <div class="wrap">
+    <header>
+      <div class="logo">
+        <img src="imagens/logo_pokeapp.PNG" alt="logo do aplicativo PokeApp">
+      </div>
+      <div class="icones">
+        <a href="/app.html" class="icones_h" id="perfil">Seu Perfil</a>
+        <a href="/social.html" class="icones_h" id="colecao">Social</a>
+        <a href="/market.html" class="icones_h" id="market">Market</a>
+        <a href="/index.html" class="icones_h" id="btnLogout">Sair</a>
+        
+
+      </div>
+    </header>
   <div class="card-shell">
     <!-- Cabeçalho -->
-    <header class="app-header-main">
+    <div class="app-header-main">
       <div>
         <h1>Minha Coleção</h1>
         <p>Bem-vindo, <span id="userEmail"></span></p>
       </div>
-
-        <a href="/social.html" class="pill" style="text-decoration:none; background:#e0e7ff;">
-            Rede social
-        </a>
 
       <div class="header-right">
         <div class="profile-box">
@@ -31,11 +41,8 @@
             Trocar foto
           </label>
         </div>
-
-        <!-- 🔹 botão de sair de volta -->
-        <button id="btnLogout" class="btn-logout">Sair</button>
       </div>
-    </header>
+    </div>
 
     <div class="layout">
       <!-- Coluna esquerda: pastas + scanner -->
