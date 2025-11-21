@@ -13,8 +13,9 @@
     <div class="logo">
       <img src="imagens/logo_pokeapp.PNG" alt="logo do aplicativo PokeApp">
     </div>
-    <div clas="icones">
-      <a href="/app.html" class="icones_h" id="perfil">Seu Perfil</a>
+    <div class="icones">
+      <a href="/app.html" class="icones_h" id="perfil">Perfil</a>
+      <a href="/market.html" class="icones_h" id="market">Market</a>
       <a href="/index.html" class="icones_h" id="btnLogout">Sair</a>
     </div>
   </header>
@@ -36,29 +37,30 @@
         <ul id="friends" class="list"></ul>
       </section>
 
-      <section>
-        <h2>Chat</h2>
-        <div class="muted">Selecione um amigo para conversar.</div>
-        <div id="chat" class="chat"></div>
-        <div class="row">
-          <input id="msgText" type="text" placeholder="Escreva sua mensagem" style="flex:1" />
-          
-          <button id="btnSend" class="primary">Enviar</button>
-        </div>
+  <section>
+  <h2 id="chatTitle">Chat</h2>
+  <div id="chatSubtitle" class="muted">Selecione um amigo para conversar.</div>
+  <div id="chat" class="chat"></div>
+  <div class="row">
+    <input id="msgText" type="text" placeholder="Escreva sua mensagem" style="flex:1" />
+    <button id="btnSend" class="primary">Enviar</button>
+  </div>
 
-        <hr style="margin:16px 0;border:none;border-top:1px solid #eee;">
+  <hr style="margin:16px 0;border:none;border-top:1px solid #eee;">
 
-        <h3>Pastas do amigo</h3>
-        <ul id="friendFolders" class="list"></ul>
+  <h3>Pastas do amigo</h3>
+  <ul id="friendFolders" class="list"></ul>
 
-        <div id="friendCards" class="friend-cards"></div>
-      </section>
+  <div id="friendCards" class="friend-cards"></div>
+</section>
+
 
     </div>
   </div>
 </div>
   <footer>
-    <p>Colocar os direitos reservados aqui</p>
+    <p>Esse site foi feito para fins de aprendizado apenas</p>
+    <p>Todos sos direitos do universo Pokemón são reservado a Nintendo</p>
   </footer>
 <script src="social.js"></script>
 </body>

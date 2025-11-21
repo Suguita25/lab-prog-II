@@ -1,4 +1,6 @@
 let currentFriendId = null;
+let currentFriendName = null;
+
 let pollTimer = null;
 let lastIso = null;
 let chatMsgs = [];
@@ -62,6 +64,21 @@ async function loadMe(){
   return me?.id;
 }
 
+function updateChatHeader() {
+  const title = document.getElementById('chatTitle');
+  const subtitle = document.getElementById('chatSubtitle');
+  if (!title || !subtitle) return;
+
+  if (currentFriendId && currentFriendName) {
+    title.textContent = `Chat com ${currentFriendName}`;
+    subtitle.textContent = ''; // some com o “Selecione um amigo...”
+  } else {
+    title.textContent = 'Chat';
+    subtitle.textContent = 'Selecione um amigo para conversar.';
+  }
+}
+
+
 /* ---------------- UI chat ---------------- */
 function setChat(messages) {
   const box = document.getElementById('chat');
@@ -110,7 +127,7 @@ async function loadPending(){
 }
 
 
-async function loadFriends(){
+async function loadFriends() {
   const arr = await getJson('/api/social/friends') || [];
   const ul = document.getElementById('friends');
 
@@ -124,6 +141,9 @@ async function loadFriends(){
     const avatarUrl = f.friendAvatarUrl || '';
     const initial = (name && name[0]) ? name[0].toUpperCase() : '?';
 
+    // nome seguro para usar em atributo HTML
+    const safeNameAttr = name.replace(/"/g, '&quot;');
+
     const avatarHtml = avatarUrl
       ? `<img class="friend-avatar-img" src="${avatarUrl}" alt="${escapeHtml(name)}">`
       : `<div class="friend-avatar-placeholder">${escapeHtml(initial)}</div>`;
@@ -135,17 +155,24 @@ async function loadFriends(){
         </div>
         <span class="friend-name">${escapeHtml(name)}</span>
         <div class="friend-actions">
-          <button class="btn-secondary" data-open="${f.friendId}">Conversar</button>
+          <button class="btn-secondary"
+                  data-open="${f.friendId}"
+                  data-name="${safeNameAttr}">
+            Conversar
+          </button>
           <button class="btn-danger" data-remove="${f.friendshipId}">Remover</button>
         </div>
       </li>
     `;
   }).join('');
 
-  // abrir chat
-  ul.querySelectorAll('[data-open]').forEach(b =>
-    b.onclick = () => openChat(Number(b.dataset.open))
-  );
+  // abrir chat (passa id + nome do amigo)
+  ul.querySelectorAll('[data-open]').forEach(b => {
+    b.onclick = () => openChat(
+      Number(b.dataset.open),
+      b.dataset.name || ''
+    );
+  });
 
   // remover amigo
   ul.querySelectorAll('[data-remove]').forEach(b =>
@@ -179,6 +206,7 @@ async function loadFriends(){
     }
   );
 }
+
 
 
 
@@ -251,15 +279,20 @@ async function loadFriendFolder(friendId, folderId){
 
 
 /* ---------------- chat/polling ---------------- */
-async function openChat(friendId){
+async function openChat(friendId, friendName) {
   currentFriendId = friendId;
+  currentFriendName = friendName || null;
   lastIso = null;
   chatMsgs = [];
   seenIds = new Set();
 
-    //carrega as pastas do amigo
+  // atualiza o título/subtítulo do chat
+  updateChatHeader();
+
+  // carrega as pastas do amigo
   loadFriendFolders(friendId);
 
+  // carrega histórico de mensagens
   const hist = await getJson(`/api/social/messages?withUserId=${friendId}`) || [];
   hist.forEach(m => seenIds.add(m.id));
   chatMsgs = hist.map(m => ({ ...m, mine: m.senderId === window.meId }));
@@ -267,11 +300,14 @@ async function openChat(friendId){
 
   lastIso = hist.length ? hist[hist.length - 1].createdAt : new Date().toISOString();
 
+  // polling para novas mensagens
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
     if (!currentFriendId || !lastIso) return;
-    const newer = await getJson(`/api/social/messages?withUserId=${currentFriendId}&since=${encodeURIComponent(lastIso)}`) || [];
-    if (newer.length){
+    const newer = await getJson(
+      `/api/social/messages?withUserId=${currentFriendId}&since=${encodeURIComponent(lastIso)}`
+    ) || [];
+    if (newer.length) {
       newer.forEach(m => {
         if (!seenIds.has(m.id)) {
           seenIds.add(m.id);
@@ -283,6 +319,7 @@ async function openChat(friendId){
     }
   }, 2000);
 }
+
 
 /* ---------------- handlers ---------------- */
 document.getElementById('btnRequest').onclick = async () => {
@@ -353,4 +390,5 @@ document.getElementById('btnSend').onclick = async () => {
   if (!me) return;
   await loadPending();
   await loadFriends();
+  updateChatHeader();
 })();

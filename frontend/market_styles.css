@@ -1,28 +1,35 @@
 :root {
-  --bg: #f3f4f6;
-  --card: #ffffff;
+  --bg: #5d5d5d;
+  --card: RGBa(187,187,187,0.6);
   --fg: #111827;
-  --muted: #6b7280;
-  --primary: #2563eb;
+  --muted: #4a3d07;
+  --primary: #facd00;
   --danger: #b91c1c;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--bg);
   color: var(--fg);
 }
 
 /* header do market */
 
 .top-header {
+  position-anchor: --header;
+  position: fixed;
+  top: anchor(bottom);
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 8px 24px;
-  background: #f9fafb;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
   gap: 16px;
 }
 
@@ -35,7 +42,7 @@ body {
   max-width: 700px;
   display: flex;
   align-items: center;
-  background: #e5edff;
+  background: #4a3d07;
   border-radius: 999px;
   padding: 4px 8px;
   gap: 8px;
@@ -48,8 +55,12 @@ body {
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 14px;
-  background: #eef2ff;
+  background: #000;
+  color: #facd00;
+  border: 1px solid #facd00;
 }
+
+
 
 .pill-label {
   font-size: 14px;
@@ -61,8 +72,8 @@ body {
 
 .icon-button {
   border-radius: 999px;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
+  border: 1px solid #facd00;
+  background: #000;
   padding: 6px 10px;
   cursor: pointer;
 }
@@ -107,6 +118,10 @@ h2 {
 }
 
 .sell-row {
+  color:#f9fafb;
+  background-color: rgba(0,0,0,0.9);
+  border-radius: 10px;
+  padding: 8px 10px;
   display: flex;
   align-items: flex-end;
   gap: 10px;
@@ -124,8 +139,13 @@ h2 {
 .sell-inputs input[type="number"] {
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid #facd00;
+  background: #facc0027;
+  color: #facd00;
+}
+
+#sellFile, #sellPrice::placeholder{
+  color:#facd00;
 }
 
 .primary {
@@ -138,7 +158,12 @@ h2 {
 }
 
 .primary:hover {
-  background: #1d4ed8;
+  filter: brightness(0.67);
+  box-shadow:0 8px 18px rgba(0, 0, 0, 0.3);
+}
+
+.primary:active {
+  transform:translateY(1px);
 }
 
 .grid-2 {
@@ -161,7 +186,7 @@ h2 {
 }
 
 .market-card {
-  background: #f9fafb;
+  background:rgba(0, 0, 0, 0.3);
   border-radius: 14px;
   padding: 8px;
   display: flex;
@@ -195,7 +220,7 @@ h2 {
 
 .market-price {
   font-weight: 600;
-  color: #16a34a;
+  color: #33da70;
   font-size: 14px;
 }
 
@@ -211,25 +236,23 @@ h2 {
   flex: 1;
   padding: 6px 8px;
   border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  background: white;
+  border: 1px solid #facd00;
+  background: #facc0027;
+  color: #facd00;
   font-size: 12px;
   cursor: pointer;
 }
 
-.btn-outline:hover {
-  background: #f3f4f6;
+button:hover {
+  filter: brightness(0.67);
+  box-shadow:0 8px 18px rgba(0, 0, 0, 0.3);
 }
 
-.btn-danger {
-  border-color: #fecaca;
-  background: #fee2e2;
-  color: var(--danger);
+button:active {
+  transform:translateY(1px);
 }
 
-.btn-danger:hover {
-  background: #fecaca;
-}
+
 
 /* notificações */
 

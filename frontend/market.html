@@ -4,24 +4,33 @@
   <meta charset="UTF-8" />
   <title>Market de Cartas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/header.css" />
-  <link rel="stylesheet" href="/market_styles.css" />
+  <link rel="stylesheet" href="/header.css">
+  <link rel="stylesheet" href="/market_styles.css"/>
 </head>
 <body>
 
-<header class="top-header">
-  
-  <div class="search-pill">
-    <span class="pill-label">Marketplace</span>
-    <input id="searchInput" type="text" placeholder="Procure por cartas" />
-    <button id="btnSearch" class="icon-button">🔍</button>
-  </div>
-  <nav class="top-nav">
-    <a href="/app.html">Coleção</a>
-    <a href="/social.html">Social</a>
-    <span id="userEmailMarket"></span>
-  </nav>
+<header>
+    <div class="logo">
+      <img src="imagens/logo_pokeapp.PNG" alt="logo do aplicativo PokeApp">
+    </div>
+    <div class="icones">
+      <a href="/app.html" class="icones_h" id="perfil">Perfil</a>
+      <a href="/social.html" class="icones_h" id="colecao">Social</a>
+      <a href="/index.html" class="icones_h" id="btnLogout">Sair</a>
+    </div>
 </header>
+
+<div class="top-header">
+      <div class="search-pill">
+        <span class="pill-label">Marketplace</span>
+        <input id="searchInput" type="text" placeholder="Procure por cartas" />
+        <button id="btnSearch" class="icon-button">🔍</button>
+      </div>
+      <!--<nav class="top-nav">
+        <span id="userEmailMarket"></span>
+      </nav>-->
+</div>
+
 
 <main class="wrap">
 
@@ -71,7 +80,10 @@
     </section>
 
 </main>
-
+<footer>
+    <p>Esse site foi feito para fins de aprendizado apenas</p>
+      <p>Todos sos direitos do universo Pokemón são reservado a Nintendo</p>
+</footer>
 <script src="/market.js"></script>
 </body>
 </html>

@@ -108,10 +108,6 @@ a{
   text-decoration: none;
 }
 
-a:hover{
-  text-decoration: underline;
-}
-
 
 .friend-cards {
   margin-top: 8px;
