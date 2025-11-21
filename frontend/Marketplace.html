@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Marketplace • Pokémon TCG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="marketplace_styles.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="card">
+    <div class="header">
+      <div>
+        <h1>🛒 Marketplace</h1>
+        <div class="muted">Compre e venda cartas com outros colecionadores</div>
+      </div>
+      <div class="nav-links">
+        <a href="/app.html" class="link">← Minha Coleção</a>
+        <a href="/social.html" class="link">Rede Social</a>
+        <button id="logoutBtn" class="btn btn-ghost">Sair</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="browse">Explorar</button>
+      <button class="tab" data-tab="my-sales">Minhas Vendas</button>
+      <button class="tab" data-tab="offers-received">Propostas Recebidas</button>
+      <button class="tab" data-tab="offers-made">Minhas Propostas</button>
+      <button class="tab" data-tab="sell">Vender Carta</button>
+    </div>
+
+    <!-- Tab: Explorar -->
+    <div id="tab-browse" class="tab-content active">
+      <div class="search-bar">
+        <input id="searchInput" type="text" placeholder="Buscar por nome do Pokémon..." />
+        <button id="btnSearch" class="btn">Buscar</button>
+        <button id="btnShowAll" class="btn btn-ghost">Mostrar Todos</button>
+      </div>
+      <div id="cardsForSale" class="cards-grid"></div>
+    </div>
+
+    <!-- Tab: Minhas Vendas -->
+    <div id="tab-my-sales" class="tab-content">
+      <h2>Minhas cartas à venda</h2>
+      <div id="mySalesList" class="sales-list"></div>
+    </div>
+
+    <!-- Tab: Propostas Recebidas -->
+    <div id="tab-offers-received" class="tab-content">
+      <h2>Propostas recebidas</h2>
+      <div id="offersReceivedList" class="offers-list"></div>
+    </div>
+
+    <!-- Tab: Minhas Propostas -->
+    <div id="tab-offers-made" class="tab-content">
+      <h2>Propostas que fiz</h2>
+      <div id="offersMadeList" class="offers-list"></div>
+    </div>
+
+    <!-- Tab: Vender Carta -->
+    <div id="tab-sell" class="tab-content">
+      <h2>Colocar carta à venda</h2>
+      
+      <div class="sell-layout">
+        <!-- Seletor de carta da coleção -->
+        <div class="my-cards-section">
+          <h3>Selecione uma carta da sua coleção</h3>
+          <div class="folder-selector">
+            <label>Pasta:</label>
+            <select id="sellFolderSelect">
+              <option value="">Carregando pastas...</option>
+            </select>
+            <button id="btnLoadFolderCards" class="btn btn-sm">Carregar Cartas</button>
+          </div>
+          <div id="myCardsForSell" class="my-cards-grid"></div>
+        </div>
+
+        <!-- Formulário de venda -->
+        <div class="sell-form-section">
+          <h3>Detalhes da venda</h3>
+          <div class="selected-card-preview" id="selectedCardPreview">
+            <div class="muted">Selecione uma carta ao lado</div>
+          </div>
+          
+          <input type="hidden" id="sellCardId" />
+
+          <label class="field">
+            <span>Preço (R$)</span>
+            <input id="sellPrice" type="number" step="0.01" min="0.01" placeholder="100.00" />
+          </label>
+
+          <label class="field">
+            <span>Condição</span>
+            <select id="sellCondition">
+              <option value="MINT">Perfeita (Mint)</option>
+              <option value="NEAR_MINT">Quase Perfeita</option>
+              <option value="EXCELLENT">Excelente</option>
+              <option value="GOOD">Boa</option>
+              <option value="LIGHT_PLAYED">Pouco Jogada</option>
+              <option value="PLAYED">Jogada</option>
+              <option value="POOR">Ruim</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Quantidade</span>
+            <input id="sellQuantity" type="number" value="1" min="1" />
+          </label>
+
+          <label class="field">
+            <span>Notas adicionais (opcional)</span>
+            <textarea id="sellNotes" rows="3" placeholder="Detalhes sobre a carta..."></textarea>
+          </label>
+
+          <button id="btnMarkForSale" class="btn btn-primary btn-full" disabled>
+            Selecione uma carta primeiro
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <pre id="output" style="margin-top:20px;display:none;"></pre>
+  </div>
+</div>
+
+<!-- Modal para fazer oferta -->
+<div id="offerModal" class="modal">
+  <div class="modal-content">
+    <h3>Fazer proposta</h3>
+    <div id="offerCardInfo" class="offer-card-info"></div>
+    
+    <input type="hidden" id="offerCardForSaleId" />
+    
+    <label class="field">
+      <span>Seu valor (R$)</span>
+      <input id="offerAmount" type="number" step="0.01" min="0.01" placeholder="95.00" />
+    </label>
+
+    <label class="field">
+      <span>Quantidade</span>
+      <input id="offerQuantity" type="number" value="1" min="1" />
+    </label>
+
+    <label class="field">
+      <span>Mensagem ao vendedor (opcional)</span>
+      <textarea id="offerMessage" rows="2" placeholder="Sua mensagem..."></textarea>
+    </label>
+
+    <div class="modal-actions">
+      <button id="btnSubmitOffer" class="btn btn-primary">Enviar Proposta</button>
+      <button id="btnCloseModal" class="btn btn-ghost">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="marketplace.js"></script>
+</body>
+</html>
