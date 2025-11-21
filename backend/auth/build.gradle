@@ -24,6 +24,8 @@ dependencies {
      // OCR
     // implementation 'net.sourceforge.tess4j:tess4j:5.11.0' // wrapper do Tesseract   
     implementation 'org.bytedeco:opencv-platform:4.10.0-1.5.11' // OpenCV + nativos
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
     runtimeOnly 'org.postgresql:postgresql:42.7.4'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

@@ -16,9 +16,6 @@
 }
 
 body {
-  margin:0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background:var(--bg);
   color:var(--fg);
 }
 
@@ -40,7 +37,7 @@ body {
 }
 
 /* header */
-#userEmail{
+#username{
   color: #facd00;
 }
 .header h1 {
@@ -348,7 +345,7 @@ input[type="file"]:focus {
 }
 
 .btn-icon:hover {
-   filter: brightness(0.6);
+  filter: brightness(0.6);
 }
 
 .btn-icon:active {

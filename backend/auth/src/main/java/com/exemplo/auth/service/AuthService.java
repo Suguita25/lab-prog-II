@@ -19,27 +19,48 @@ public class AuthService {
 
     @Transactional
     public User register(RegisterRequest req) {
-        if (users.existsByEmail(req.email())) {
+        String username = req.username() == null ? "" : req.username().trim();
+        String emailRaw = req.email() == null ? "" : req.email().trim();
+        String password = req.password() == null ? "" : req.password().trim();
+
+        if (username.isEmpty() || emailRaw.isEmpty() || password.isEmpty()) {
+            throw new IllegalArgumentException("Preencha usuário, email e senha.");
+        }
+
+        String email = emailRaw.toLowerCase(); // 👈 padroniza email
+
+        if (users.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("Email já cadastrado");
         }
-        if (users.existsByUsername(req.username())) {
+        if (users.existsByUsernameIgnoreCase(username)) {
             throw new IllegalArgumentException("Username já cadastrado");
         }
+
         String salt = BCrypt.gensalt(12);
-        String hash = BCrypt.hashpw(req.password(), salt);
+        String hash = BCrypt.hashpw(password, salt);
 
         User u = new User();
-        u.setUsername(req.username());
-        u.setEmail(req.email());
+        u.setUsername(username);
+        u.setEmail(email);
         u.setPasswordHash(hash);
+        // u.setProfileImagePath(null); // se tiver o campo
+
         return users.save(u);
     }
 
     @Transactional(readOnly = true)
     public boolean login(LoginRequest req) {
-        return users.findByEmail(req.email())
-                .map(u -> BCrypt.checkpw(req.password(), u.getPasswordHash()))
+        String emailRaw = req.email() == null ? "" : req.email().trim();
+        String password = req.password() == null ? "" : req.password().trim();
+
+        if (emailRaw.isEmpty() || password.isEmpty()) {
+            return false;
+        }
+
+        String email = emailRaw.toLowerCase();
+
+        return users.findByEmailIgnoreCase(email)
+                .map(u -> BCrypt.checkpw(password, u.getPasswordHash()))
                 .orElse(false);
     }
 }
-

@@ -49,8 +49,8 @@ async function ensureAuth() {
   if (res.status === 401) { location.href = '/'; return null; }
   const me = await res.json();
   window.meId = me?.id;
-  const span = document.getElementById('userEmail');
-  if (span) span.textContent = me.email || me.username || '';
+  const span = document.getElementById('username');
+  if (span) span.textContent = me.username || me.username || '';
 
   applyAvatar(me);
   return me;
