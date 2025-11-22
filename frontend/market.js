@@ -323,21 +323,21 @@ async function doSearch(fromRefresh) {
 /* ---- anunciar via scanner ---- */
 
 async function handleSellScan() {
-  const fileInput = document.getElementById('sellFile');
+  const fileInput  = document.getElementById('sellFile');
   const priceInput = document.getElementById('sellPrice');
-  const debug = document.getElementById('sellDebug');
+  const debug      = document.getElementById('sellDebug'); // pode até nem existir
 
-  const file = fileInput.files[0];
-  const price = priceInput.value.trim();
+  const file  = fileInput.files[0];
+  const price = (priceInput.value || '').trim();
 
-  if (!file) { alert('Escolha a imagem da carta.'); return; }
+  if (!file)  { alert('Escolha a imagem da carta.'); return; }
   if (!price) { alert('Informe um preço.'); return; }
 
   const fd = new FormData();
   fd.append('file', file);
   fd.append('price', price);
 
-  debug.textContent = 'Enviando...';
+  if (debug) debug.textContent = ''; // limpa qualquer coisa antiga
 
   const r = await fetch('/api/market/listings/scan', {
     method: 'POST',
@@ -349,19 +349,26 @@ async function handleSellScan() {
   let json;
   try { json = JSON.parse(txt); } catch { json = { raw: txt }; }
 
-  if (r.status === 401) { location.href = '/'; return; }
+  if (r.status === 401) { 
+    location.href = '/'; 
+    return; 
+  }
 
   if (!r.ok) {
-    debug.textContent = 'Erro: ' + (json.error || txt);
-    alert(json.error || 'Falha ao anunciar.');
+    const msg = json.error || txt || 'Falha ao anunciar.';
+    if (debug) debug.textContent = ''; // não mostra JSON
+    alert(msg);
     return;
   }
 
-  debug.textContent = JSON.stringify(json, null, 2);
-  fileInput.value = '';
+  // SUCESSO: nada de JSON na tela, só mensagem amigável
+  if (debug) debug.textContent = 'Carta anunciada com sucesso!';
+
+  fileInput.value  = '';
   priceInput.value = '';
   loadMyListings();
 }
+
 
 /* ---- boot ---- */
 
